@@ -1017,80 +1017,144 @@
     }
   }
 
+    function updateDashboardForRoute(routeObj, originName, destName, simState) {
+    if (!routeObj) return;
+
+    const volMult = simState ? (simState.volume_multiplier || 1.0) : (parseFloat(document.getElementById('simVolumeSlider')?.value) || 1.0);
+    const rain = simState ? simState.rain_active : (document.getElementById('simRainCheck')?.checked || false);
+    const accident = simState ? (simState.accident_corridor !== null) : (document.getElementById('simAccidentCheck')?.checked || false);
+    const closure = simState ? simState.lane_closure_active : (document.getElementById('simClosureCheck')?.checked || false);
+
+    // 1. Calculate dynamic vehicle counts based on distance & simulation
+    const dist = parseFloat(routeObj.distKm) || 10.0;
+    const baseBikes = Math.max(3, Math.round((8 + (dist * 0.8)) * volMult));
+    const baseCars = Math.max(2, Math.round((4 + (dist * 0.5)) * volMult));
+    const baseBuses = Math.max(1, Math.round((2 + (dist * 0.2)) * volMult));
+    const baseTrucks = Math.max(1, Math.round((1 + (dist * 0.15)) * volMult));
+
+    const countBikesEl = document.getElementById('countBikes');
+    const countCarsEl = document.getElementById('countCars');
+    const countBusesEl = document.getElementById('countBuses');
+    const countTrucksEl = document.getElementById('countTrucks');
+
+    if (countBikesEl) countBikesEl.textContent = `${baseBikes} units · 0.5/0.8 PCU`;
+    if (countCarsEl) countCarsEl.textContent = `${baseCars} units · 1.0 PCU ea`;
+    if (countBusesEl) countBusesEl.textContent = `${baseBuses} units · 3.0 PCU ea`;
+    if (countTrucksEl) countTrucksEl.textContent = `${baseTrucks} units · 2.5 PCU`;
+
+    const totalVehicles = Math.max(1, (baseBikes + baseCars + baseBuses + baseTrucks));
+    if (document.getElementById('barBikes')) document.getElementById('barBikes').style.width = `${Math.min(100, Math.round((baseBikes / totalVehicles) * 100))}%`;
+    if (document.getElementById('barCars')) document.getElementById('barCars').style.width = `${Math.min(100, Math.round((baseCars / totalVehicles) * 100))}%`;
+    if (document.getElementById('barBuses')) document.getElementById('barBuses').style.width = `${Math.min(100, Math.round((baseBuses / totalVehicles) * 100))}%`;
+    if (document.getElementById('barTrucks')) document.getElementById('barTrucks').style.width = `${Math.min(100, Math.round((baseTrucks / totalVehicles) * 100))}%`;
+
+    // Calculate total PCU
+    const calculatedPcu = ((baseBikes * 0.6) + (baseCars * 1.0) + (baseBuses * 3.0) + (baseTrucks * 2.5)).toFixed(1);
+    const pcuEl = document.getElementById('pcuTotalVal');
+    if (pcuEl) pcuEl.textContent = `${calculatedPcu} PCU`;
+
+    // Congestion percentage
+    let baseCongestion = Math.min(96, Math.round(30 + (dist * 2.2) * volMult + (rain ? 18 : 0) + (accident ? 26 : 0) + (closure ? 14 : 0)));
+    if (routeObj.tag === 'OPTIMAL') baseCongestion = Math.max(22, baseCongestion - 14);
+    if (routeObj.tag === 'CONGESTED') baseCongestion = Math.min(98, baseCongestion + 18);
+
+    const kpiPcu = document.getElementById('kpiPcuValue');
+    if (kpiPcu) kpiPcu.textContent = `${baseCongestion}%`;
+
+    const timeSaved = (routeObj.durationMin * 0.35).toFixed(1);
+    const co2Saved = (dist * 1.4).toFixed(1);
+    if (document.getElementById('kpiTimeSaved')) document.getElementById('kpiTimeSaved').textContent = `${timeSaved}m`;
+    if (document.getElementById('kpiCo2Saved')) document.getElementById('kpiCo2Saved').textContent = `${co2Saved} kg`;
+
+    const activeIncidentsCount = (accident ? 1 : 0) + (closure ? 1 : 0) + (baseCongestion > 75 ? 1 : 0);
+    if (document.getElementById('kpiIncidentsVal')) document.getElementById('kpiIncidentsVal').textContent = `${activeIncidentsCount}`;
+    if (document.getElementById('kpiIncidentTrend')) document.getElementById('kpiIncidentTrend').textContent = `${activeIncidentsCount} active`;
+
+    // Update Incident Banner
+    const banner = document.getElementById('incidentBanner');
+    if (banner) {
+      if (activeIncidentsCount > 0) {
+        document.getElementById('incidentBannerTitle').textContent = accident ? `🚨 CRITICAL INCIDENT: ${originName} → ${destName}` : `⚠️ TRAFFIC BOTTLENECK DETECTED`;
+        document.getElementById('incidentBannerSub').textContent = accident 
+          ? `Vehicle Collision Bottleneck — Estimated Speed Drop to 9 km/h (Signal Override & Reroute Active)` 
+          : `High PCU Load on ${originName} → ${destName} — AI Recommending Optimal Reroute`;
+        banner.style.display = "flex";
+      } else {
+        banner.style.display = "none";
+      }
+    }
+
+    // Update XAI Factors
+    const xaiList = document.getElementById('xaiList');
+    if (xaiList) {
+      let volPct = Math.min(65, Math.round(30 * volMult));
+      let rainPct = rain ? 35 : 12;
+      let incPct = accident ? 42 : 18;
+      let closePct = closure ? 28 : 10;
+      const factorTotal = volPct + rainPct + incPct + closePct;
+
+      const factors = [
+        { factor: 'Traffic Volume Spike', pct: Math.round((volPct / factorTotal) * 100), color: '#4DD6FF' },
+        { factor: 'Weather / Rain Impact', pct: Math.round((rainPct / factorTotal) * 100), color: '#FFB547' },
+        { factor: 'Incidents & Bottlenecks', pct: Math.round((incPct / factorTotal) * 100), color: '#FB6169' },
+        { factor: 'Lane Closure / Roadworks', pct: Math.round((closePct / factorTotal) * 100), color: '#34D399' }
+      ];
+
+      xaiList.innerHTML = factors.map(item => `
+        <div class="xai-item">
+          <div class="xai-top"><span>${item.factor}</span><span>${item.pct}%</span></div>
+          <div class="xai-track"><div class="xai-fill" style="width:${item.pct}%; background:${item.color};"></div></div>
+        </div>
+      `).join('');
+    }
+
+    updateGauge(baseCongestion);
+  }
+
   // Interactive Scenario Simulator Application
   async function applyTrafficSimulation(){
     const volume_multiplier = parseFloat(document.getElementById('simVolumeSlider').value);
     const rain_active = document.getElementById('simRainCheck').checked;
-    const accident = document.getElementById('simAccidentCheck').checked ? "Silk Board Junction" : null;
+    const accident = document.getElementById('simAccidentCheck').checked ? "Active Route Corridor" : null;
     const lane_closure_active = document.getElementById('simClosureCheck').checked;
+
+    const simState = { volume_multiplier, rain_active, accident_corridor: accident, lane_closure_active };
+
+    const activeRoute = (allAvailableRoutes && allAvailableRoutes[activeRouteIndex]) || (allAvailableRoutes && allAvailableRoutes[0]);
+    const originText = document.getElementById('originInput')?.value || "Origin";
+    const destText = document.getElementById('destInput')?.value || "Destination";
+
+    if (activeRoute) {
+      updateDashboardForRoute(activeRoute, originText, destText, simState);
+    }
 
     try {
       const res = await fetch(`${BACKEND_URL}/api/simulation/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ volume_multiplier, rain_active, accident_corridor: accident, lane_closure_active })
+        body: JSON.stringify(simState)
       });
-
       if (res.ok) {
         const data = await res.json();
-        updateSimulationUI(data);
       }
-    } catch(e) {
-      console.log("Error applying simulation:", e);
-    }
+    } catch(e) {}
   }
 
-  function updateSimulationUI(data) {
-    if(!data) return;
-
-    // Update KPI & Sustainability Metrics
-    document.getElementById('kpiPcuValue').textContent = `${data.summary.avg_congestion_pct}%`;
-    document.getElementById('kpiTimeSaved').textContent = `${data.summary.time_saved_min}m`;
-    document.getElementById('kpiCo2Saved').textContent = `${data.summary.co2_saved_kg} kg`;
-    document.getElementById('kpiIncidentsVal').textContent = `${data.summary.active_incidents_count}`;
-    document.getElementById('kpiIncidentTrend').textContent = `${data.summary.active_incidents_count} active`;
-
-    // Update Incident Banner
-    const banner = document.getElementById('incidentBanner');
-    if (data.incidents && data.incidents.length > 0) {
-      const inc = data.incidents[0];
-      document.getElementById('incidentBannerTitle').textContent = `🚨 ${inc.severity}: ${inc.corridor.toUpperCase()}`;
-      document.getElementById('incidentBannerSub').textContent = `${inc.type} — ${inc.speed_drop} (${inc.action_required})`;
-      banner.style.display = "flex";
-    } else {
-      banner.style.display = "none";
-    }
-
-    // Update XAI Factor Breakdown List
-    const xaiList = document.getElementById('xaiList');
-    if (xaiList && data.xai_breakdown) {
-      xaiList.innerHTML = "";
-      data.xai_breakdown.forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'xai-item';
-        row.innerHTML = `
-          <div class="xai-top"><span>${item.factor}</span><span>${item.pct}%</span></div>
-          <div class="xai-track"><div class="xai-fill" style="width:${item.pct}%; background:${item.color};"></div></div>
-        `;
-        xaiList.appendChild(row);
-      });
-    }
-
-    // Update Congestion Gauge
-    updateGauge(data.summary.avg_congestion_pct);
-  }
-
-  // Emergency Ambulance Green Wave Priority Corridor Trigger
   async function triggerEmergencyGreenWave() {
     try {
       const res = await fetch(`${BACKEND_URL}/api/emergency/greenwave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ corridor: "Silk Board Junction", hospital_name: "St. John's Hospital (Koramangala)" })
+        body: JSON.stringify({ corridor: "Active Corridor", hospital_name: "St. John's Hospital" })
       });
       if (res.ok) {
         const data = await res.json();
-        alert(`🚑 EMERGENCY AMBULANCE GREEN WAVE ACTIVATED!\n\nCorridor: ${data.emergency_corridor}\nDestination: ${data.target_hospital}\nSignal Action: ${data.signal_override}\nPriority Time Saved: -${data.estimated_delay_reduction_min} mins`);
+        alert(`🚑 EMERGENCY AMBULANCE GREEN WAVE ACTIVATED!
+
+Corridor: ${data.emergency_corridor}
+Destination: ${data.target_hospital}
+Signal Override: ${data.signal_override}
+Time Saved: -${data.estimated_delay_reduction_min} mins`);
       }
     } catch(e) {
       alert("🚑 Emergency Green Wave Priority Dispatch Triggered!");
@@ -1194,7 +1258,8 @@
     const modal = document.getElementById('routePlannerModal');
     if (modal) {
       modal.style.display = 'flex';
-      renderModalRouteCards();
+      updateDashboardForRoute(activeRoute, oName, dName);
+    renderModalRouteCards();
     }
   }
 
@@ -1494,6 +1559,7 @@
       `;
     }
 
+    updateDashboardForRoute(activeRoute, oName, dName);
     renderModalRouteCards();
   }
 
