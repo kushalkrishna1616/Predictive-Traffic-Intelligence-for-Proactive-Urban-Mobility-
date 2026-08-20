@@ -742,9 +742,38 @@
 </div>
 
 <script>
-  const BACKEND_URL = "http://localhost:8000";
+  const devices = [
+    // ── 10 CCTV VISION AI NODES ──
+    { id: "CAM-01", name: "CAM-3049 Silk Board Junction", road: "Hosur Road / Outer Ring Road", lat: 12.9172, lng: 77.6228, pcu: "42.0 PCU", speed: "18 km/h", status: "SEVERE CONGESTION", type: "CCTV Vision AI", video: "/static/videos/cctv/CCTV Footage_ Car Crash After Rickshaw Crossing  Daytime Surveillance.mp4" },
+    { id: "CAM-02", name: "CAM-1923 Bellandur Outer Ring Road", road: "Outer Ring Road Corridor", lat: 12.9280, lng: 77.6760, pcu: "28.5 PCU", speed: "24 km/h", status: "MODERATE", type: "CCTV Vision AI", video: "/static/videos/cctv/vid 2.mp4" },
+    { id: "CAM-03", name: "CAM-4120 Tin Factory (KR Puram)", road: "Old Madras Road Arterial", lat: 13.0030, lng: 77.6700, pcu: "54.0 PCU", speed: "11 km/h", status: "CRITICAL", type: "CCTV Vision AI", video: "/static/videos/cctv/vid3.mp4" },
+    { id: "CAM-04", name: "CAM-1055 Hebbal Flyover Junction", road: "Bellary Road / Airport Corridor", lat: 13.0350, lng: 77.5970, pcu: "18.2 PCU", speed: "38 km/h", status: "CLEAR", type: "CCTV Vision AI", video: "/static/videos/cctv/vid 4.mp4" },
+    { id: "CAM-05", name: "CAM-0812 MG Road Signal", road: "MG Road Central Arterial", lat: 12.9750, lng: 77.6080, pcu: "14.5 PCU", speed: "42 km/h", status: "CLEAR", type: "CCTV Vision AI", video: "/static/videos/cctv/vid 5.mp4" },
+    { id: "CAM-06", name: "CAM-5501 Indiranagar 100ft Road", road: "100ft Road Corridor", lat: 12.9710, lng: 77.6410, pcu: "22.0 PCU", speed: "31 km/h", status: "FLOWING", type: "CCTV Vision AI", video: "/static/videos/cctv/vid6.mp4" },
+    { id: "CAM-07", name: "CAM-6210 Koramangala Sony World", road: "80ft Road Junction", lat: 12.9352, lng: 77.6245, pcu: "33.0 PCU", speed: "22 km/h", status: "MODERATE", type: "CCTV Vision AI", video: "/static/videos/cctv/vidssave.com CCTV CAMERA  traffic day night clip 720P.mp4" },
+    { id: "CAM-08", name: "CAM-7811 Electronic City Elevated Toll", road: "Elevated Expressway", lat: 12.8452, lng: 77.6602, pcu: "19.0 PCU", speed: "58 km/h", status: "FAST FLOW", type: "CCTV Vision AI", video: "/static/videos/cctv/vid 2.mp4" },
+    { id: "CAM-09", name: "CAM-8902 Yeshwanthpur Circle", road: "Tumkur Road NH48", lat: 13.0280, lng: 77.5410, pcu: "39.5 PCU", speed: "16 km/h", status: "HEAVY", type: "CCTV Vision AI", video: "/static/videos/cctv/vid3.mp4" },
+    { id: "CAM-10", name: "CAM-9104 Marathahalli Bridge Junction", road: "HAL Airport Road / ORR", lat: 12.9560, lng: 77.7010, pcu: "47.0 PCU", speed: "15 km/h", status: "CONGESTED", type: "CCTV Vision AI", video: "/static/videos/cctv/vid 4.mp4" },
 
-  let mapInitialized = false;
+    // ── 7 SATELLITE AERIAL VISION NODES ──
+    { id: "SAT-01", name: "SAT-101 HSR Layout Aerial Node", road: "HSR Sector 1 Corridor", lat: 12.9116, lng: 77.6389, pcu: "16.0 PCU", speed: "36 km/h", status: "OPTIMAL", type: "High-Res Orbital Satellite Vision", video: "/static/videos/sensors/13665959-sd_640_360_30fps.mp4" },
+    { id: "SAT-02", name: "SAT-102 Agara Lake Flyover Aerial", road: "Agara Corridor Outer Ring Road", lat: 12.9250, lng: 77.6380, pcu: "21.0 PCU", speed: "30 km/h", status: "OPTIMAL", type: "Geostationary Traffic Satellite", video: "/static/videos/sensors/traffic1.mp4" },
+    { id: "SAT-03", name: "SAT-103 Whitefield ITPL Aerial", road: "ITPL Tech Corridor", lat: 12.9860, lng: 77.7340, pcu: "41.0 PCU", speed: "19 km/h", status: "HEAVY", type: "Aerial Drone / Satellite Link", video: "/static/videos/sensors/traffic4.mp4" },
+    { id: "SAT-04", name: "SAT-104 Domlur Flyover Aerial", road: "Inner Ring Road", lat: 12.9610, lng: 77.6380, pcu: "26.0 PCU", speed: "29 km/h", status: "FLOWING", type: "High-Altitude Traffic Satellite", video: "/static/videos/sensors/traffic5.mp4" },
+    { id: "SAT-05", name: "SAT-105 Richmond Circle Aerial", road: "RRMR Road", lat: 12.9600, lng: 77.5970, pcu: "29.0 PCU", speed: "25 km/h", status: "MODERATE", type: "Urban Macro Satellite Feed", video: "/static/videos/sensors/traffic6.mp4" },
+    { id: "SAT-06", name: "SAT-106 Dairy Circle Aerial", road: "Bannerghatta Road Arterial", lat: 12.9380, lng: 77.5980, pcu: "35.0 PCU", speed: "20 km/h", status: "MODERATE", type: "SAR Radar Satellite Stream", video: "/static/videos/sensors/traffic1.mp4" },
+    { id: "SAT-07", name: "SAT-107 Chikkalsandra Aerial", road: "Uttarahalli Main Road", lat: 12.9150, lng: 77.5450, pcu: "31.5 PCU", speed: "23 km/h", status: "FLOWING", type: "Hyperspectral Satellite Vision", video: "/static/videos/sensors/13665959-sd_640_360_30fps.mp4" }
+  ];
+
+  let defaultCityMarkers = [];
+  let searchMarkersGroup = [];
+  let searchRoutePolyline = null;
+  let activeRouteIndex = 0;
+  let allAvailableRoutes = [];
+  let routePolylines = [];
+
+
+let mapInitialized = false;
   let leafletMap, mapCorridorLine, mapRerouteLine;
 
   function switchMonitorTab(mode) {
@@ -780,8 +809,10 @@
     }
   }
 
-  function initLeafletMap() {
+    function initLeafletMap() {
+    if (mapInitialized && leafletMap) return;
     mapInitialized = true;
+
     leafletMap = L.map('leafletMap', {
       center: [12.9550, 77.6350],
       zoom: 13,
@@ -790,7 +821,7 @@
     });
 
     const osmStandard = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19,
       maxNativeZoom: 19
     });
@@ -807,7 +838,6 @@
       maxNativeZoom: 19
     });
 
-    // Default to Light OpenStreetMap Standard view as requested by user
     osmStandard.addTo(leafletMap);
 
     const baseMaps = {
@@ -818,63 +848,36 @@
 
     L.control.layers(baseMaps, null, { position: 'topright' }).addTo(leafletMap);
 
-    // Custom pins for CCTV Cameras and IoT Sensors
-    const createPin = (label, color, border) => L.divIcon({
-      className: 'custom-map-pin',
-      html: `<div style="background:#0F172A; color:${color}; border:2px solid ${border}; padding:3px 7px; border-radius:10px; font-family:monospace; font-size:10px; font-weight:700; white-space:nowrap; box-shadow:0 0 10px ${border};">${label}</div>`,
-      iconSize: [70, 24],
-      iconAnchor: [35, 12]
-    });
-
-    const cctvIcon = createPin("📹 CCTV AI", "#38BDF8", "rgba(56,189,248,0.8)");
-    const satelliteIcon = createPin("🛰️ SATELLITE", "#10B981", "rgba(16,185,129,0.8)");
-
-    const devices = [
-      // ── 10 CCTV VISION AI NODES ──
-      { id: "CAM-01", name: "CAM-3049 Silk Board Junction", road: "Hosur Road / Outer Ring Road", lat: 12.9172, lng: 77.6228, pcu: "42.0 PCU", speed: "18 km/h", status: "SEVERE CONGESTION", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/CCTV Footage_ Car Crash After Rickshaw Crossing  Daytime Surveillance.mp4" },
-      { id: "CAM-02", name: "CAM-1923 Bellandur Outer Ring Road", road: "Outer Ring Road Corridor", lat: 12.9280, lng: 77.6760, pcu: "28.5 PCU", speed: "24 km/h", status: "MODERATE", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vid 2.mp4" },
-      { id: "CAM-03", name: "CAM-4120 Tin Factory (KR Puram)", road: "Old Madras Road Arterial", lat: 13.0030, lng: 77.6700, pcu: "54.0 PCU", speed: "11 km/h", status: "CRITICAL", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vid3.mp4" },
-      { id: "CAM-04", name: "CAM-1055 Hebbal Flyover Junction", road: "Bellary Road / Airport Corridor", lat: 13.0350, lng: 77.5970, pcu: "18.2 PCU", speed: "38 km/h", status: "CLEAR", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vid 4.mp4" },
-      { id: "CAM-05", name: "CAM-0812 MG Road Signal", road: "MG Road Central Arterial", lat: 12.9750, lng: 77.6080, pcu: "14.5 PCU", speed: "42 km/h", status: "CLEAR", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vid 5.mp4" },
-      { id: "CAM-06", name: "CAM-5501 Indiranagar 100ft Road", road: "100ft Road Corridor", lat: 12.9710, lng: 77.6410, pcu: "22.0 PCU", speed: "31 km/h", status: "FLOWING", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vid6.mp4" },
-      { id: "CAM-07", name: "CAM-6210 Koramangala Sony World", road: "80ft Road Junction", lat: 12.9352, lng: 77.6245, pcu: "33.0 PCU", speed: "22 km/h", status: "MODERATE", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vidssave.com CCTV CAMERA  traffic day night clip 720P.mp4" },
-      { id: "CAM-08", name: "CAM-7811 Electronic City Elevated Toll", road: "Elevated Expressway", lat: 12.8452, lng: 77.6602, pcu: "19.0 PCU", speed: "58 km/h", status: "FAST FLOW", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vid 2.mp4" },
-      { id: "CAM-09", name: "CAM-8902 Yeshwanthpur Circle", road: "Tumkur Road NH48", lat: 13.0280, lng: 77.5410, pcu: "39.5 PCU", speed: "16 km/h", status: "HEAVY", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vid3.mp4" },
-      { id: "CAM-10", name: "CAM-9104 Marathahalli Bridge Junction", road: "HAL Airport Road / ORR", lat: 12.9560, lng: 77.7010, pcu: "47.0 PCU", speed: "15 km/h", status: "CONGESTED", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/vid 4.mp4" },
-
-      // ── 7 SATELLITE AERIAL VISION NODES ──
-      { id: "SAT-01", name: "SAT-101 HSR Layout Aerial Node", road: "HSR Sector 1 Corridor", lat: 12.9116, lng: 77.6389, pcu: "16.0 PCU", speed: "36 km/h", status: "OPTIMAL", type: "High-Res Orbital Satellite Vision", icon: satelliteIcon, video: "/static/videos/sensors/13665959-sd_640_360_30fps.mp4" },
-      { id: "SAT-02", name: "SAT-102 Agara Lake Flyover Aerial", road: "Agara Corridor Outer Ring Road", lat: 12.9250, lng: 77.6380, pcu: "21.0 PCU", speed: "30 km/h", status: "OPTIMAL", type: "Geostationary Traffic Satellite", icon: satelliteIcon, video: "/static/videos/sensors/traffic1.mp4" },
-      { id: "SAT-03", name: "SAT-103 Whitefield ITPL Aerial", road: "ITPL Tech Corridor", lat: 12.9860, lng: 77.7340, pcu: "41.0 PCU", speed: "19 km/h", status: "HEAVY", type: "Aerial Drone / Satellite Link", icon: satelliteIcon, video: "/static/videos/sensors/traffic2.mp4" },
-      { id: "SAT-04", name: "SAT-104 Domlur Flyover Aerial", road: "Inner Ring Road", lat: 12.9610, lng: 77.6380, pcu: "26.0 PCU", speed: "29 km/h", status: "FLOWING", type: "High-Altitude Traffic Satellite", icon: satelliteIcon, video: "/static/videos/sensors/traffic3.mp4" },
-      { id: "SAT-05", name: "SAT-105 Richmond Circle Aerial", road: "RRMR Road", lat: 12.9600, lng: 77.5970, pcu: "29.0 PCU", speed: "25 km/h", status: "MODERATE", type: "Urban Macro Satellite Feed", icon: satelliteIcon, video: "/static/videos/sensors/traffic4.mp4" },
-      { id: "SAT-06", name: "SAT-106 Dairy Circle Aerial", road: "Bannerghatta Road Arterial", lat: 12.9380, lng: 77.5980, pcu: "35.0 PCU", speed: "20 km/h", status: "MODERATE", type: "SAR Radar Satellite Stream", icon: satelliteIcon, video: "/static/videos/sensors/traffic5.mp4" },
-      { id: "SAT-07", name: "SAT-107 Chikkalsandra Aerial", road: "Uttarahalli Main Road", lat: 12.9150, lng: 77.5450, pcu: "31.5 PCU", speed: "23 km/h", status: "FLOWING", type: "Hyperspectral Satellite Vision", icon: satelliteIcon, video: "/static/videos/sensors/traffic6.mp4" }
-    ];
-
+    // Initial City Devices Markers
     devices.forEach((d, idx) => {
-      const m = L.marker([d.lat, d.lng], { icon: d.icon }).addTo(leafletMap);
-      defaultCityMarkers.push(m);
       const isCritical = d.status.includes("CRITICAL") || d.status.includes("SEVERE") || d.status.includes("HEAVY");
       const isClear = d.status.includes("CLEAR") || d.status.includes("FAST") || d.status.includes("OPTIMAL");
       const statusColor = isCritical ? "#FB6169" : (isClear ? "#34D399" : "#FFB547");
-      const isCam = d.type.includes("CCTV") || d.type.includes("Vision") && !d.id.startsWith("SAT");
+      const isCam = d.type.includes("CCTV") || !d.id.startsWith("SAT");
+      const col = isCam ? "#38BDF8" : "#10B981";
+      const glow = isCam ? "rgba(56,189,248,0.8)" : "rgba(16,185,129,0.8)";
+      const label = isCam ? "📹 CCTV AI" : "🛰️ SATELLITE";
 
-      const selectedVideo = encodeURI(d.video);
-      const timeOffset = (idx * 2) % 15;
-      const borderColor = isCam ? "#38BDF8" : "#10B981";
-      const tagLabel = isCam ? "● LIVE CCTV FEED" : "● LIVE SATELLITE FEED";
+      const pinIcon = L.divIcon({
+        className: 'custom-map-pin',
+        html: `<div style="background:#0F172A; color:${col}; border:2px solid ${glow}; padding:3px 7px; border-radius:10px; font-family:monospace; font-size:10px; font-weight:700; white-space:nowrap; box-shadow:0 0 10px ${glow}; cursor:pointer;">${label}</div>`,
+        iconSize: [78, 24],
+        iconAnchor: [39, 12]
+      });
+
+      const m = L.marker([d.lat, d.lng], { icon: pinIcon }).addTo(leafletMap);
+      defaultCityMarkers.push(m);
 
       const liveMediaHtml = `
-        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${borderColor}; position:relative; background:#000;">
+        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${col}; position:relative; background:#000;">
           <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block;"
-            src="${selectedVideo}#t=${timeOffset}">
+            src="${encodeURI(d.video)}#t=${(idx * 2) % 15}">
           </video>
-          <div style="position:absolute; top:5px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">${tagLabel}</div>
-          <div style="position:absolute; bottom:5px; right:6px; background:rgba(0,0,0,0.75); color:${borderColor}; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">FPS: 30.0</div>
+          <div style="position:absolute; top:5px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">${isCam ? "● LIVE CCTV FEED" : "● LIVE SATELLITE FEED"}</div>
+          <div style="position:absolute; bottom:5px; right:6px; background:rgba(0,0,0,0.75); color:${col}; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">FPS: 30.0</div>
         </div>
         <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE: ${d.name}'; document.getElementById('cameraHudId').textContent='FEED: ${d.name}';" 
-          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, ${borderColor}, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
+          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, ${col}, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
           📺 VIEW IN MAIN MONITOR
         </button>
       `;
@@ -909,22 +912,6 @@
     mapRerouteLine = L.polyline(rerouteCoords, { color: '#4DD6FF', weight: 5, dashArray: '6, 8', opacity: 0.9 }).addTo(leafletMap);
 
     leafletMap.fitBounds(mapCorridorLine.getBounds(), { padding: [50, 50] });
-  }
-
-  function updateClock(){
-    document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN', { hour12:false });
-  }
-  updateClock(); setInterval(updateClock, 1000);
-
-  // Generate gauge ticks
-  const ticks = document.getElementById('ticks');
-  if (ticks) {
-    for(let i=0;i<40;i++){
-      const t = document.createElement('div');
-      t.className = 'tick';
-      t.style.transform = `rotate(${i*9}deg)`;
-      ticks.appendChild(t);
-    }
   }
 
   let isPolling = false;
@@ -1272,7 +1259,22 @@
     renderMultiRoutesOnMap(0, oLat, oLng, dLat, dLng, oName, dName);
   }
 
+    function getInterpolatedPoint(coords, fraction) {
+    if (!coords || coords.length === 0) return [12.9255, 77.5468];
+    if (coords.length === 1) return coords[0];
+    const exactIndex = fraction * (coords.length - 1);
+    const lower = Math.floor(exactIndex);
+    const upper = Math.min(lower + 1, coords.length - 1);
+    const remainder = exactIndex - lower;
+    const lat = coords[lower][0] + (coords[upper][0] - coords[lower][0]) * remainder;
+    const lng = coords[lower][1] + (coords[upper][1] - coords[lower][1]) * remainder;
+    return [lat, lng];
+  }
+
   function renderMultiRoutesOnMap(selectedIdx, oLat, oLng, dLat, dLng, oName, dName) {
+    if (!mapInitialized) {
+      initLeafletMap();
+    }
     if (!leafletMap) return;
 
     // Clear previous search layers AND hide default city pins/lines
@@ -1296,7 +1298,7 @@
       const poly = L.polyline(rt.coords, {
         color: isSelected ? rt.color : '#64748B',
         weight: isSelected ? 7 : 4,
-        opacity: isSelected ? 0.95 : 0.5,
+        opacity: isSelected ? 0.95 : 0.55,
         dashArray: isSelected ? rt.dashArray : '5, 8'
       }).addTo(leafletMap);
 
@@ -1314,21 +1316,20 @@
     oPin.addTo(leafletMap); dPin.addTo(leafletMap);
     searchMarkersGroup.push(oPin, dPin);
 
-    // ── DEPLOY ALL 17 CCTV & SATELLITE CAMERAS ACROSS THE ROUTES ──
+    // ── DEPLOY ALL 17 CCTV & SATELLITE CAMERAS ACROSS ALL 3 ROUTES ──
     allAvailableRoutes.forEach((routeObj, rIdx) => {
       const rCoords = routeObj.coords;
       const isSelectedRoute = rIdx === selectedIdx;
-      // Distribute 5 to 6 cameras per route so all 17 cameras are active
+      // 6 cameras on Route 1, 6 on Route 2, 5 on Route 3 = All 17 cameras
       const countPerRoute = rIdx === 0 ? 6 : (rIdx === 1 ? 6 : 5);
-      const step = Math.floor(rCoords.length / (countPerRoute + 1));
 
       for (let k = 1; k <= countPerRoute; k++) {
         const cIdx = (rIdx * 6 + k - 1) % devices.length;
         const dev = devices[cIdx];
-        const pointIdx = Math.min(k * step, rCoords.length - 1);
-        const [wLat, wLng] = rCoords[pointIdx];
-        const jLat = wLat + (Math.random() - 0.5) * (isSelectedRoute ? 0.002 : 0.004);
-        const jLng = wLng + (Math.random() - 0.5) * (isSelectedRoute ? 0.002 : 0.004);
+        const fraction = k / (countPerRoute + 1);
+        const [wLat, wLng] = getInterpolatedPoint(rCoords, fraction);
+        const jLat = wLat + (Math.random() - 0.5) * 0.0015;
+        const jLng = wLng + (Math.random() - 0.5) * 0.0015;
 
         const isCam = dev.type.includes("CCTV") || !dev.id.startsWith("SAT");
         const col = isCam ? "#38BDF8" : "#10B981";
@@ -1336,8 +1337,8 @@
         const label = isCam ? "📹 CCTV AI" : "🛰️ SATELLITE";
 
         const devIcon = L.divIcon({
-          className: '',
-          html: `<div style="background:#0F172A;color:${col};border:2px solid ${glow};padding:3px 7px;border-radius:10px;font-family:monospace;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 0 10px ${glow};cursor:pointer;opacity:${isSelectedRoute ? 1.0 : 0.75};">${label}</div>`,
+          className: 'custom-map-pin',
+          html: `<div style="background:#0F172A;color:${col};border:2px solid ${glow};padding:3px 7px;border-radius:10px;font-family:monospace;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 0 10px ${glow};cursor:pointer;opacity:${isSelectedRoute ? 1.0 : 0.8};">${label}</div>`,
           iconSize: [78, 24],
           iconAnchor: [39, 12]
         });
@@ -1378,7 +1379,7 @@
       }
     });
 
-    // Auto-fit bounds
+    // Auto-fit bounds to the active route polyline
     const activePoly = routePolylines[selectedIdx] || routePolylines[0];
     if (activePoly) {
       leafletMap.fitBounds(activePoly.getBounds(), { padding: [60, 60] });
@@ -1410,7 +1411,7 @@
       </div>`;
 
       noteEl.innerHTML = `
-        <div style="font-size:12.5px; margin-bottom:2px;">🗺️ <b>Available Routes Found</b>: <b>${oName} → ${dName}</b> (All 3 Routes and 17 Video Checkpoints Active):</div>
+        <div style="font-size:12.5px; margin-bottom:2px;">🗺️ <b>Available Routes Found</b>: <b>${oName} → ${dName}</b> (All 3 Routes & 17 Video Checkpoints Active):</div>
         ${pillsHtml}
       `;
     }
