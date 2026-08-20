@@ -139,6 +139,30 @@ async def get_history_trends(corridor: str = "Silk Board Junction"):
 async def get_osm_route(origin: str = "silk_board", destination: str = "indiranagar"):
     return osm_graph.find_shortest_route(origin, destination)
 
+@app.get("/api/osm/geocode")
+async def geocode_query(q: str):
+    """Progressive Nominatim Geocoding proxy with User-Agent and fallback tokens."""
+    import urllib.request
+    import urllib.parse
+    parts = [p.strip() for p in q.split(',') if p.strip()]
+    attempts = [q]
+    if len(parts) > 1:
+        attempts.append(parts[0] + ', India')
+        attempts.append(parts[0])
+    
+    for attempt in attempts:
+        try:
+            url = f"https://nominatim.openstreetmap.org/search?format=json&q={urllib.parse.quote(attempt)}&limit=1"
+            req = urllib.request.Request(url, headers={"User-Agent": "RoutePulse-Traffic-AI-Dashboard/2.0"})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if data and len(data) > 0:
+                    name = data[0].get("display_name", attempt).split(",")[0]
+                    return {"lat": float(data[0]["lat"]), "lng": float(data[0]["lon"]), "name": name, "display_name": data[0].get("display_name", "")}
+        except Exception:
+            continue
+    return JSONResponse(status_code=404, content={"error": "Location not found", "query": q})
+
 # General API Telemetry & Optimization Routes
 @app.get("/api/info")
 @app.get("/api")

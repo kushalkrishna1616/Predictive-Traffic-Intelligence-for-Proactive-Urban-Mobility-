@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .vscode/
 *.log
+*.tmp.mp4
+backend/static/videos/sensors/traffic2.mp4
+backend/static/videos/sensors/traffic3.mp4
