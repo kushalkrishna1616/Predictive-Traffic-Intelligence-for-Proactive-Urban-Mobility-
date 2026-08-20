@@ -768,9 +768,6 @@
   let defaultCityMarkers = [];
   let searchMarkersGroup = [];
   let searchRoutePolyline = null;
-  let activeRouteIndex = 0;
-  let allAvailableRoutes = [];
-  let routePolylines = [];
 
 
 let mapInitialized = false;
@@ -1099,9 +1096,6 @@ let mapInitialized = false;
     alert(`📊 Switched Active Dataset Pipeline to: ${datasetId.toUpperCase()}`);
   }
 
-  let searchRoutePolyline = null;
-  let searchMarkersGroup = [];
-  let defaultCityMarkers = [];
 
   async function geocodeLocation(query, fallbackLat, fallbackLng, defaultName) {
     if (!query || query.trim() === "") return [fallbackLat, fallbackLng, defaultName];
@@ -1122,9 +1116,6 @@ let mapInitialized = false;
   }
 
     
-  let activeRouteIndex = 0;
-  let allAvailableRoutes = [];
-  let routePolylines = [];
 
   function openRouteModal() {
     const modal = document.getElementById('routePlannerModal');
