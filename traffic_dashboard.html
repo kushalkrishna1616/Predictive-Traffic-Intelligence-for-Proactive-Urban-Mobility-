@@ -1296,10 +1296,9 @@ function initLeafletMap() {
     fetchRouteOptimization();
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
-    setupAutocomplete('originInput', 'originDropdown');
-    setupAutocomplete('destInput', 'destDropdown');
-  });
+  // Script runs after body — DOM is already ready, call directly
+  setupAutocomplete('originInput', 'originDropdown');
+  setupAutocomplete('destInput', 'destDropdown');
 </script>
 </body>
 </html>
