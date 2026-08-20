@@ -725,21 +725,29 @@
       tabMap.classList.remove('active');
     } else {
       cctvBox.style.display = 'none';
-      mapBox.style.display = 'flex';
+      mapBox.style.display = 'block';
       tabCctv.classList.remove('active');
       tabMap.classList.add('active');
 
       if (!mapInitialized) {
         initLeafletMap();
-      } else {
-        setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 150);
       }
+      setTimeout(() => {
+        if (leafletMap) {
+          leafletMap.invalidateSize();
+          if (mapCorridorLine) {
+            leafletMap.fitBounds(mapCorridorLine.getBounds(), { padding: [50, 50] });
+          } else {
+            leafletMap.setView([12.9550, 77.6350], 12);
+          }
+        }
+      }, 100);
     }
   }
 
   function initLeafletMap() {
     mapInitialized = true;
-    leafletMap = L.map('leafletMap').setView([12.9450, 77.6350], 12);
+    leafletMap = L.map('leafletMap').setView([12.9550, 77.6350], 12);
 
     const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -790,14 +798,16 @@
       [12.9280, 77.6760],
       [13.0030, 77.6700]
     ];
-    mapCorridorLine = L.polyline(corridorCoords, { color: '#FB6169', weight: 5, opacity: 0.85 }).addTo(leafletMap);
+    mapCorridorLine = L.polyline(corridorCoords, { color: '#FB6169', weight: 6, opacity: 0.85 }).addTo(leafletMap);
 
     const rerouteCoords = [
       [12.9172, 77.6228],
       [12.9340, 77.6380],
       [12.9710, 77.6410]
     ];
-    mapRerouteLine = L.polyline(rerouteCoords, { color: '#4DD6FF', weight: 4, dashArray: '6, 8', opacity: 0.9 }).addTo(leafletMap);
+    mapRerouteLine = L.polyline(rerouteCoords, { color: '#4DD6FF', weight: 5, dashArray: '6, 8', opacity: 0.9 }).addTo(leafletMap);
+
+    leafletMap.fitBounds(mapCorridorLine.getBounds(), { padding: [50, 50] });
   }
 
   function updateClock(){
