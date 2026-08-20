@@ -1602,14 +1602,33 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
     renderAlternateRoutesPanel(oName, dName, oLat, oLng, dLat, dLng);
   }
 
-    function renderAlternateRoutesPanel(oName, dName, oLat, oLng, dLat, dLng) {
+      function selectRouteByIndex(idx) {
+    if (!allAvailableRoutes || !allAvailableRoutes[idx]) return;
+    const originText = document.getElementById('originInput')?.value || "Origin";
+    const destText = document.getElementById('destInput')?.value || "Destination";
+    const oName = originText.split(',')[0].trim();
+    const dName = destText.split(',')[0].trim();
+    const oLat = allAvailableRoutes[0].coords[0][0];
+    const oLng = allAvailableRoutes[0].coords[0][1];
+    const lastIdx = allAvailableRoutes[0].coords.length - 1;
+    const dLat = allAvailableRoutes[0].coords[lastIdx][0];
+    const dLng = allAvailableRoutes[0].coords[lastIdx][1];
+    renderMultiRoutesOnMap(idx, oLat, oLng, dLat, dLng, oName, dName);
+  }
+
+  function renderAlternateRoutesPanel(oName, dName, oLat, oLng, dLat, dLng) {
     const listEl = document.getElementById('dynamicAlternateRoutesList');
     const metaEl = document.getElementById('altRoutesMeta');
-    if (!listEl || !allAvailableRoutes || allAvailableRoutes.length === 0) return;
+    if (!listEl) return;
+
+    if (!allAvailableRoutes || allAvailableRoutes.length === 0) {
+      listEl.innerHTML = `<div style="padding:16px; color:#94A3B8; text-align:center; font-size:12px;">🔍 Calculating live route corridors...</div>`;
+      return;
+    }
 
     if (metaEl) metaEl.textContent = `${allAvailableRoutes.length} CORRIDORS ANALYZED`;
 
-        listEl.innerHTML = allAvailableRoutes.map((rt, idx) => {
+    listEl.innerHTML = allAvailableRoutes.map((rt, idx) => {
       const isSel = idx === activeRouteIndex;
       const isOptimal = idx === 0;
       const isMuddy = rt.isMuddy || rt.tag === 'MUDDY HAZARD';
@@ -1623,15 +1642,15 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
       const dashOffset = Math.round(132 - (132 * (congPct / 100)));
       
       let badgeHtml = isOptimal 
-        ? `<span class="best-tag" style="background:rgba(52,211,153,0.15); color:#34D399; border:1px solid rgba(52,211,153,0.3); font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;">⭐ AI Recommended</span>`
+        ? `<span class="best-tag" style="background:rgba(52,211,153,0.18); color:#34D399; border:1px solid rgba(52,211,153,0.4); font-size:10px; font-weight:800; padding:3px 8px; border-radius:4px;">⭐ AI Recommended</span>`
         : (idx === 1 
-          ? `<span style="background:rgba(255,181,71,0.15); color:#FFB547; border:1px solid rgba(255,181,71,0.3); font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px;">⚡ Arterial Loop</span>`
-          : `<span style="background:rgba(251,97,105,0.15); color:#FB6169; border:1px solid rgba(251,97,105,0.3); font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px;">⚠️ Bottleneck +${rt.delayMin}</span>`);
+          ? `<span style="background:rgba(255,181,71,0.18); color:#FFB547; border:1px solid rgba(255,181,71,0.4); font-size:10px; font-weight:700; padding:3px 8px; border-radius:4px;">⚡ Arterial Loop</span>`
+          : `<span style="background:rgba(251,97,105,0.18); color:#FB6169; border:1px solid rgba(251,97,105,0.4); font-size:10px; font-weight:700; padding:3px 8px; border-radius:4px;">⚠️ Bottleneck +${rt.delayMin}</span>`);
 
       if (isWeatherProof) {
-        badgeHtml = `<span class="best-tag" style="background:rgba(56,189,248,0.22); color:#38BDF8; border:1px solid rgba(56,189,248,0.5); font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;">⭐ Weather-Proof Bypass</span>`;
+        badgeHtml = `<span class="best-tag" style="background:rgba(56,189,248,0.22); color:#38BDF8; border:1px solid rgba(56,189,248,0.5); font-size:10px; font-weight:800; padding:3px 8px; border-radius:4px;">⭐ Weather-Proof Bypass</span>`;
       } else if (isMuddy) {
-        badgeHtml = `<span style="background:rgba(251,97,105,0.22); color:#FB6169; border:1px solid rgba(251,97,105,0.5); font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;">🌧️ Muddy / Waterlogged</span>`;
+        badgeHtml = `<span style="background:rgba(251,97,105,0.22); color:#FB6169; border:1px solid rgba(251,97,105,0.5); font-size:10px; font-weight:800; padding:3px 8px; border-radius:4px;">🌧️ Muddy Hazard</span>`;
       }
 
       let savedHtml = isOptimal 
@@ -1640,27 +1659,31 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
       if (isWeatherProof) savedHtml = `(Avoids Muddy Terrain)`;
       if (isMuddy) savedHtml = `(+38m mud delay)`;
 
-      const cardBorder = isSel ? `border: 2px solid ${rt.color}; background: rgba(56,189,248,0.12); box-shadow: 0 0 14px rgba(56,189,248,0.25);` : 'border: 1px solid rgba(255,255,255,0.08);';
+      const cardBorder = isSel 
+        ? `border: 2px solid ${rt.color}; background: rgba(56,189,248,0.14); box-shadow: 0 0 16px rgba(56,189,248,0.3);` 
+        : 'border: 1px solid rgba(255,255,255,0.08); background: rgba(18,23,36,0.6);';
 
       return `
-        <div class="route-card ${isOptimal ? 'best' : ''}" onclick="renderMultiRoutesOnMap(${idx}, ${oLat}, ${oLng}, ${dLat}, ${dLng}, '${oName}', '${dName}')" 
-          style="cursor:pointer; padding:12px; border-radius:10px; transition:all 0.2s; ${cardBorder}">
-          <div class="ring-wrap">
-            <svg viewBox="0 0 52 52" width="52" height="52">
-              <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>
-              <circle cx="26" cy="26" r="21" fill="none" stroke="${ringCol}" stroke-width="5" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="${dashOffset}" transform="rotate(-90 26 26)"/>
-            </svg>
-            <div class="ring-val" style="color:${ringCol}; font-size:11px; font-weight:800;">${congPct}%</div>
-          </div>
-          <div class="route-body">
-            <div class="route-card-top" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-              <span class="route-name" style="font-weight:700; font-size:12px; color:${isSel ? '#FFF' : '#E2E8F0'};">${rt.name.split('(')[0]}</span>
-              ${badgeHtml}
+        <div class="route-card ${isOptimal ? 'best' : ''}" onclick="selectRouteByIndex(${idx})" 
+          style="cursor:pointer; padding:12px 14px; border-radius:12px; transition:all 0.2s; ${cardBorder} margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="ring-wrap" style="flex-shrink:0;">
+              <svg viewBox="0 0 52 52" width="48" height="48">
+                <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>
+                <circle cx="26" cy="26" r="21" fill="none" stroke="${ringCol}" stroke-width="5" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="${dashOffset}" transform="rotate(-90 26 26)"/>
+              </svg>
+              <div class="ring-val" style="color:${ringCol}; font-size:11px; font-weight:800;">${congPct}%</div>
             </div>
-            <div style="font-size:10.5px; color:#64748B; margin-bottom:4px;">${rt.via}</div>
-            <div class="route-stats" style="display:flex; justify-content:space-between; font-size:11px; color:#94A3B8;">
-              <span><b>${rt.durationMin} min</b> ETA <span style="color:${isWeatherProof ? '#38BDF8' : (isMuddy ? '#FB6169' : '#34D399')}">${savedHtml}</span></span>
-              <span><b>${rt.distKm} km</b> · <span style="font-weight:700; color:${ringCol}">${rt.speedAvg}</span></span>
+            <div class="route-body" style="flex:1; min-width:0;">
+              <div class="route-card-top" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px;">
+                <span class="route-name" style="font-weight:700; font-size:12.5px; color:${isSel ? '#FFF' : '#E2E8F0'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rt.name.split('(')[0]}</span>
+                ${badgeHtml}
+              </div>
+              <div style="font-size:10.5px; color:#64748B; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📍 ${rt.via}</div>
+              <div class="route-stats" style="display:flex; justify-content:space-between; font-size:11px; color:#94A3B8;">
+                <span><b>${rt.durationMin} min</b> ETA <span style="color:${isWeatherProof ? '#38BDF8' : (isMuddy ? '#FB6169' : '#34D399')}; font-weight:700;">${savedHtml}</span></span>
+                <span><b>${rt.distKm} km</b> · <span style="font-weight:700; color:${ringCol}">${rt.speedAvg}</span></span>
+              </div>
             </div>
           </div>
         </div>
