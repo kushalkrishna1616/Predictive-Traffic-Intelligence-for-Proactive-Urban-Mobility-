@@ -30,6 +30,8 @@ class CCTVVideoProcessor:
         
         # Initialize synthetic/simulated traffic objects with continuous motion
         self.vehicles = self._generate_initial_vehicles()
+        self.last_process_time = 0.0
+        self.cached_result = None
 
     def _generate_initial_vehicles(self) -> List[Dict[str, Any]]:
         """Generates realistic vehicle tracking trajectories simulating Bengaluru CCTV camera feed."""
@@ -55,6 +57,10 @@ class CCTVVideoProcessor:
 
     def process_next_frame(self) -> Dict[str, Any]:
         """Advances video processing by 1 frame, updates motion, and computes live CV metrics."""
+        now = time.time()
+        if self.cached_result is not None and (now - self.last_process_time) < 0.10:
+            return self.cached_result
+
         self.frame_index += 1
         
         # Create base canvas for CCTV frame (Dark asphalt asphalt road scene)
@@ -143,7 +149,7 @@ class CCTVVideoProcessor:
         _, jpeg_buf = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         jpeg_bytes = jpeg_buf.tobytes()
 
-        return {
+        result = {
             "frame_index": self.frame_index,
             "total_vehicles": len(self.vehicles),
             "counts": counts,
@@ -156,3 +162,6 @@ class CCTVVideoProcessor:
             "boxes": active_boxes,
             "jpeg_bytes": jpeg_bytes
         }
+        self.cached_result = result
+        self.last_process_time = time.time()
+        return result

@@ -907,9 +907,9 @@
     }
   }
 
-  // Refresh CCTV video frames at ~10 FPS for video stream effect
-  setInterval(refreshCCTVFrame, 100);
-  setInterval(fetchVideoTelemetry, 300);
+  // Refresh CCTV video frames at smooth ~4 FPS for video stream effect
+  setInterval(refreshCCTVFrame, 250);
+  setInterval(fetchVideoTelemetry, 500);
 </script>
 </body>
 </html>
