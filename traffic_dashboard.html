@@ -839,24 +839,66 @@ function initLeafletMap() {
       { name: "SENSOR-107 Dairy Circle Junction", road: "Bannerghatta Road", lat: 12.9380, lng: 77.5980, pcu: "35.0 PCU", speed: "20 km/h", status: "MODERATE", type: "Bluetooth Traffic Probe", icon: sensorIcon }
     ];
 
-    devices.forEach(d => {
+    devices.forEach((d, idx) => {
       const m = L.marker([d.lat, d.lng], { icon: d.icon }).addTo(leafletMap);
       const isCritical = d.status.includes("CRITICAL") || d.status.includes("SEVERE") || d.status.includes("HEAVY");
       const isClear = d.status.includes("CLEAR") || d.status.includes("FAST") || d.status.includes("OPTIMAL");
       const statusColor = isCritical ? "#FB6169" : (isClear ? "#34D399" : "#FFB547");
+      const isCam = d.type.includes("CCTV") || d.type.includes("Vision");
 
-      m.bindPopup(`
-        <div style="font-family:'Inter',sans-serif; padding:4px 2px; color:#0D111C; min-width:180px;">
-          <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">${d.type}</div>
-          <div style="font-size:13px; font-weight:700; color:#0F172A; margin:2px 0 4px;">${d.name}</div>
-          <div style="font-size:11.5px; color:#64748B; margin-bottom:8px;">📍 ${d.road}</div>
-          <div style="background:#F1F5F9; padding:8px 10px; border-radius:6px; font-family:monospace; font-size:11px; display:flex; justify-content:space-between; margin-bottom:6px;">
-            <span>PCU Load: <b>${d.pcu}</b></span>
+      const timeOffset = (idx * 3) % 15;
+      const filters = [
+        "contrast(1.08) brightness(1.02)",
+        "contrast(1.15) hue-rotate(10deg)",
+        "contrast(1.1) saturate(1.2)",
+        "contrast(1.05) brightness(0.95)",
+        "contrast(1.2) hue-rotate(350deg)"
+      ];
+      const videoFilter = filters[idx % filters.length];
+
+      const liveMediaHtml = isCam ? `
+        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid #38BDF8; position:relative; background:#000;">
+          <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block; filter:${videoFilter};"
+            src="/static/videos/traffic1.mp4#t=${timeOffset}"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          </video>
+          <img src="/api/video/frame" style="width:100%; height:120px; object-fit:cover; display:none;" alt="Live AI CCTV Frame" />
+          <div style="position:absolute; top:5px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">● LIVE AI FEED</div>
+          <div style="position:absolute; bottom:5px; right:6px; background:rgba(0,0,0,0.75); color:#38BDF8; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">CAM-FPS: 30.0</div>
+        </div>
+        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE CCTV: ${d.name}'; document.getElementById('cameraHudId').textContent='FEED: ${d.name}';" 
+          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, #38BDF8, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
+          📺 VIEW IN MAIN MONITOR
+        </button>
+      ` : `
+        <div style="margin-top:8px; background:#0F172A; border:1px solid #34D399; border-radius:8px; padding:10px; font-family:monospace;">
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:#34D399; margin-bottom:6px;">
+            <span>📡 RADAR FREQ: 77 GHz</span>
+            <span>SAMPLING: 100 Hz</span>
+          </div>
+          <div style="height:26px; display:flex; align-items:flex-end; gap:3px; justify-content:center; background:rgba(52,211,153,0.08); border-radius:4px; padding:4px;">
+            <div style="width:5px; height:18px; background:#34D399; border-radius:2px;"></div>
+            <div style="width:5px; height:24px; background:#34D399; border-radius:2px;"></div>
+            <div style="width:5px; height:12px; background:#34D399; border-radius:2px;"></div>
+            <div style="width:5px; height:20px; background:#34D399; border-radius:2px;"></div>
+            <div style="width:5px; height:15px; background:#34D399; border-radius:2px;"></div>
+          </div>
+        </div>
+      `;
+
+      m.bindPopup(L.popup({ maxWidth: 260 }).setContent(`
+        <div style="font-family:'Inter',sans-serif; padding:4px 2px; color:#0D111C; min-width:220px;">
+          <div style="font-size:10px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">${d.type}</div>
+          <div style="font-size:13px; font-weight:700; color:#0F172A; margin:2px 0 3px;">${d.name}</div>
+          <div style="font-size:11.5px; color:#64748B; margin-bottom:6px;">📍 ${d.road}</div>
+          <div style="background:#F1F5F9; padding:6px 10px; border-radius:6px; font-family:monospace; font-size:11px; display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span>PCU: <b>${d.pcu}</b></span>
             <span>Speed: <b>${d.speed}</b></span>
           </div>
           <div style="font-size:11px; font-weight:700; color:${statusColor}; text-align:right;">● ${d.status}</div>
+          ${liveMediaHtml}
         </div>
-      `);
+      `));
     });
 
     const corridorCoords = [
@@ -1184,12 +1226,100 @@ function initLeafletMap() {
       }).addTo(leafletMap);
       searchMarkersGroup.push(destPin);
 
-      // Auto-fit Leaflet viewport to searched route
-      leafletMap.fitBounds(searchRoutePolyline.getBounds(), { padding: [60, 60] });
+    // ── DYNAMIC CAMERA & SENSOR PLACEMENT ALONG ROUTE ──
+    const numDevices = Math.min(10, Math.max(4, Math.floor(waypoints.length / 8)));
+    const step = Math.floor(waypoints.length / (numDevices + 1));
+
+    const statusPool = ["CLEAR","FLOWING","MODERATE","HEAVY","CONGESTED","CRITICAL","OPTIMAL","SEVERE CONGESTION"];
+    const typePoolCam = ["CCTV Vision AI","4K Thermal Camera","PTZ Speed Camera","AI Lane Counter"];
+    const typePoolSen = ["Dual Radar Loop","IoT Acoustic Radar","Infrared Counter","Bluetooth Probe","Radar Speed Sensor"];
+
+    for (let i = 1; i <= numDevices; i++) {
+      const idx = Math.min(i * step, waypoints.length - 1);
+      const [wLat, wLng] = waypoints[idx];
+      const jLat = wLat + (Math.random() - 0.5) * 0.004;
+      const jLng = wLng + (Math.random() - 0.5) * 0.004;
+
+      const isCam = i % 2 === 1;
+      const pcu = (Math.random() * 50 + 10).toFixed(1);
+      const speed = Math.floor(Math.random() * 55 + 10);
+      const status = statusPool[Math.floor(Math.random() * statusPool.length)];
+      const devType = isCam ? typePoolCam[i % typePoolCam.length] : typePoolSen[i % typePoolSen.length];
+      const devId = isCam ? `CAM-${9000+i}` : `SEN-${2000+i}`;
+      const label = isCam ? "📹 CCTV AI" : "📡 SENSOR";
+      const col = isCam ? "#38BDF8" : "#34D399";
+      const glow = isCam ? "rgba(56,189,248,0.8)" : "rgba(52,211,153,0.8)";
+      const isCrit = status.includes("CRIT")||status.includes("SEVERE")||status.includes("HEAVY");
+      const isFree = status.includes("CLEAR")||status.includes("FAST")||status.includes("OPT")||status.includes("FLOW");
+      const sc = isCrit?"#FB6169":isFree?"#34D399":"#FFB547";
+
+      const devIcon = L.divIcon({
+        className:'',
+        html:`<div style="background:#0F172A;color:${col};border:2px solid ${glow};padding:3px 7px;border-radius:10px;font-family:monospace;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 0 10px ${glow};cursor:pointer;">${label}</div>`,
+        iconSize:[72,24], iconAnchor:[36,12]
+      });
+
+      const marker = L.marker([jLat,jLng],{icon:devIcon}).addTo(leafletMap);
+      searchMarkersGroup.push(marker);
+
+      const timeOffset = (i * 3) % 15;
+      const filters = [
+        "contrast(1.1) brightness(1.0)",
+        "contrast(1.18) hue-rotate(15deg)",
+        "contrast(1.08) saturate(1.3)",
+        "contrast(1.2) brightness(0.95)",
+        "contrast(1.15) hue-rotate(345deg)"
+      ];
+      const videoFilter = filters[i % filters.length];
+
+      const liveVideoHtml = isCam ? `
+        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${col}; position:relative; background:#000;">
+          <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block; filter:${videoFilter};"
+            src="/static/videos/traffic1.mp4#t=${timeOffset}"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          </video>
+          <img src="/api/video/frame" style="width:100%; height:120px; object-fit:cover; display:none;" alt="Live CCTV AI Frame" />
+          <div style="position:absolute; top:4px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">● LIVE FEED</div>
+          <div style="position:absolute; bottom:4px; right:6px; background:rgba(0,0,0,0.75); color:#38BDF8; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">${new Date().toLocaleTimeString('en-IN',{hour12:false})}</div>
+        </div>
+        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE CCTV: ${devId} (${devType})'; document.getElementById('cameraHudId').textContent='FEED: ${devId}'; " 
+          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, #38BDF8, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
+          📺 VIEW IN MAIN MONITOR
+        </button>
+      ` : `
+        <div style="margin-top:8px; background:#0F172A; border:1px solid #34D399; border-radius:8px; padding:10px; font-family:monospace;">
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:#34D399; margin-bottom:6px;">
+            <span>📡 TELEMETRY: REAL-TIME</span>
+            <span>FREQ: 77 GHz</span>
+          </div>
+          <div style="height:24px; display:flex; align-items:flex-end; gap:3px; justify-content:center; background:rgba(52,211,153,0.08); border-radius:4px; padding:4px;">
+            <div style="width:5px; height:18px; background:#34D399; border-radius:2px;"></div>
+            <div style="width:5px; height:24px; background:#34D399; border-radius:2px;"></div>
+            <div style="width:5px; height:12px; background:#34D399; border-radius:2px;"></div>
+            <div style="width:5px; height:20px; background:#34D399; border-radius:2px;"></div>
+            <div style="width:5px; height:16px; background:#34D399; border-radius:2px;"></div>
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(L.popup({maxWidth:260}).setContent(`
+        <div style="font-family:'Inter',sans-serif;padding:4px 2px;color:#0D111C;min-width:220px;">
+          <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.5px;">${devType}</div>
+          <div style="font-size:13px;font-weight:700;color:#0F172A;margin:3px 0 2px;">${devId} · Route Checkpoint ${i}</div>
+          <div style="font-size:11px;color:#64748B;margin-bottom:6px;">📍 Along ${oName} → ${dName}</div>
+          <div style="background:#F1F5F9;padding:8px 10px;border-radius:6px;font-family:monospace;font-size:11px;display:flex;justify-content:space-between;margin-bottom:5px;">
+            <span>PCU: <b>${pcu}</b></span><span>Speed: <b>${speed} km/h</b></span>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:${sc};margin-bottom:4px;">● ${status}</div>
+          ${liveVideoHtml}
+        </div>
+      `));
     }
 
+    leafletMap.fitBounds(searchRoutePolyline.getBounds(), { padding: [60, 60] });
+
     if (noteEl) {
-      noteEl.innerHTML = `🗺️ <b>OpenStreetMap Real Driving Route Found</b>: <b>${oName} → ${dName}</b> | Total Distance: <b>${distKm} km</b> | Drive Time: <b>${durationMin} mins</b>.`;
+      noteEl.innerHTML = `🗺️ <b>Route Found</b>: <b>${oName} → ${dName}</b> | <b>${distKm} km</b> · <b>${durationMin} mins</b> | ${numDevices} CCTV/Sensor checkpoints placed along route.`;
     }
   }
 

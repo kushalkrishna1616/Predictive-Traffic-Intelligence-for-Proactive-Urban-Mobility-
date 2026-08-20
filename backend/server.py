@@ -50,6 +50,9 @@ current_simulation_state = scenario.simulate_scenario()
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HTML_V1 = os.path.join(PROJECT_ROOT, "traffic_dashboard.html")
 HTML_V2 = os.path.join(PROJECT_ROOT, "traffic_dashboard_v2.html")
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Static Dashboard UI Routes
 @app.get("/")
