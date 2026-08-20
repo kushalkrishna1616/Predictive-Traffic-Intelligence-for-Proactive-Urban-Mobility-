@@ -465,12 +465,10 @@
       <div class="cmd-field origin" style="position:relative;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4DD6FF" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
         <input type="text" id="originInput" value="Silk Board Junction, Bengaluru" placeholder="Origin..." autocomplete="off">
-        <div class="autocomplete-dropdown" id="originDropdown"></div>
       </div>
       <div class="cmd-field" style="position:relative;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFB547" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
         <input type="text" id="destInput" value="Indiranagar 100ft Road, Bengaluru" placeholder="Enter your destination..." autocomplete="off">
-        <div class="autocomplete-dropdown" id="destDropdown"></div>
       </div>
 
       <select class="dataset-select" id="datasetSelect" onchange="switchDataset(this.value)">
@@ -1195,110 +1193,78 @@ function initLeafletMap() {
     }
   }
 
-  // Live Autocomplete Suggestions Logic
-  const POPULAR_LOCATIONS = [
-    "Silk Board Junction, Bengaluru",
-    "Indiranagar 100ft Road, Bengaluru",
-    "Chikkalsandra, Bengaluru",
-    "Bellandur Outer Ring Road, Bengaluru",
-    "Tin Factory, KR Puram, Bengaluru",
-    "Hebbal Flyover Junction, Bengaluru",
-    "MG Road Signal, Bengaluru",
-    "Koramangala Sony World Signal, Bengaluru",
-    "HSR Layout 27th Main, Bengaluru",
-    "Agara Lake Junction, Bengaluru",
-    "Whitefield ITPL Main Road, Bengaluru",
-    "Marathahalli Bridge, Bengaluru",
-    "Electronic City Toll, Bengaluru",
-    "Yeshwanthpur Circle, Bengaluru",
-    "VIT Vellore, Tamil Nadu",
-    "Delhi, India",
-    "Mumbai, Maharashtra, India",
-    "Chennai, Tamil Nadu, India",
-    "Hyderabad, Telangana, India"
+  // ── AUTOCOMPLETE ENGINE ──
+  const PLACES = [
+    "Silk Board Junction, Bengaluru", "Indiranagar 100ft Road, Bengaluru",
+    "Chikkalsandra, Bengaluru", "Bengaluru, Karnataka",
+    "Bellandur Outer Ring Road, Bengaluru", "Tin Factory, KR Puram, Bengaluru",
+    "Hebbal Flyover, Bengaluru", "MG Road Signal, Bengaluru",
+    "Koramangala, Bengaluru", "HSR Layout, Bengaluru",
+    "Whitefield ITPL, Bengaluru", "Marathahalli Bridge, Bengaluru",
+    "Electronic City Toll, Bengaluru", "Yeshwanthpur, Bengaluru",
+    "Agara Lake Junction, Bengaluru", "Domlur Flyover, Bengaluru",
+    "Richmond Circle, Bengaluru", "VIT Vellore, Tamil Nadu",
+    "Vellore, Tamil Nadu", "Delhi, India", "Mumbai, Maharashtra",
+    "Chennai, Tamil Nadu", "Hyderabad, Telangana", "Mysuru, Karnataka"
   ];
 
-  function setupAutocomplete(inputId, dropdownId) {
-    const input = document.getElementById(inputId);
-    const dropdown = document.getElementById(dropdownId);
-    if (!input || !dropdown) return;
+  function makeDropdown(inputEl) {
+    const dd = document.createElement('div');
+    dd.style.cssText = 'position:fixed;background:#0D1117;border:1.5px solid rgba(56,189,248,0.5);border-radius:10px;box-shadow:0 20px 48px rgba(0,0,0,0.9);z-index:2147483647;display:none;max-height:230px;overflow-y:auto;font-family:Inter,sans-serif;min-width:220px';
+    document.body.appendChild(dd);
 
-    let debounceTimer = null;
-
-    function positionDropdown() {
-      const rect = input.getBoundingClientRect();
-      dropdown.style.top = (rect.bottom + 6) + 'px';
-      dropdown.style.left = rect.left + 'px';
-      dropdown.style.width = rect.width + 'px';
+    function position() {
+      const r = inputEl.getBoundingClientRect();
+      dd.style.top = (r.bottom + 4) + 'px';
+      dd.style.left = r.left + 'px';
+      dd.style.width = r.width + 'px';
     }
 
-    input.addEventListener('input', function() {
-      const q = input.value.trim().toLowerCase();
-      clearTimeout(debounceTimer);
-
-      if (q.length < 2) {
-        dropdown.style.display = 'none';
-        dropdown.innerHTML = '';
-        return;
-      }
-
-      // Instant local matching
-      const localMatches = POPULAR_LOCATIONS.filter(loc => loc.toLowerCase().includes(q));
-      positionDropdown();
-      renderDropdownItems(localMatches, input, dropdown);
-
-      // Live Nominatim for worldwide results
-      debounceTimer = setTimeout(async () => {
+    let timer = null;
+    inputEl.addEventListener('input', function() {
+      const q = inputEl.value.trim().toLowerCase();
+      clearTimeout(timer);
+      if (q.length < 2) { dd.style.display = 'none'; return; }
+      const local = PLACES.filter(p => p.toLowerCase().includes(q));
+      position(); fill(local);
+      timer = setTimeout(async () => {
         try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`;
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.length > 0) {
-              const apiNames = data.map(item => item.display_name);
-              const combined = Array.from(new Set([...localMatches, ...apiNames])).slice(0, 7);
-              positionDropdown();
-              renderDropdownItems(combined, input, dropdown);
-            }
+          const r2 = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + encodeURIComponent(q));
+          if (r2.ok) {
+            const data = await r2.json();
+            const merged = [...new Set([...local, ...data.map(d => d.display_name)])].slice(0, 8);
+            position(); fill(merged);
           }
-        } catch(e) { /* silent */ }
-      }, 280);
+        } catch(e) {}
+      }, 300);
     });
 
-    window.addEventListener('scroll', () => { if (dropdown.style.display === 'block') positionDropdown(); }, true);
-    window.addEventListener('resize', () => { if (dropdown.style.display === 'block') positionDropdown(); });
-
-    document.addEventListener('click', function(e) {
-      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-        dropdown.style.display = 'none';
-      }
-    });
-  }
-
-  function renderDropdownItems(items, input, dropdown) {
-    if (!items || items.length === 0) {
-      dropdown.style.display = 'none';
-      dropdown.innerHTML = '';
-      return;
+    function fill(items) {
+      if (!items.length) { dd.style.display = 'none'; return; }
+      dd.innerHTML = items.map(item => {
+        const esc = item.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+        return '<div style="padding:10px 14px;cursor:pointer;font-size:13px;color:#E2E8F0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px;" onmousedown="event.preventDefault()" onclick="acPick(this,\'' + inputEl.id + '\')">📍 ' + esc + '</div>';
+      }).join('');
+      dd.querySelectorAll('div').forEach(el => {
+        el.addEventListener('mouseenter', () => { el.style.background='rgba(56,189,248,0.18)'; el.style.color='#38BDF8'; });
+        el.addEventListener('mouseleave', () => { el.style.background=''; el.style.color='#E2E8F0'; });
+      });
+      dd.style.display = 'block';
     }
-    dropdown.innerHTML = items.map(item => {
-      const safe = item.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      return `<div class="autocomplete-item" onmousedown="selectAutocomplete('${input.id}', '${dropdown.id}', '${safe}')">📍 ${item}</div>`;
-    }).join('');
-    dropdown.style.display = 'block';
+
+    document.addEventListener('click', e => { if (e.target !== inputEl && !dd.contains(e.target)) dd.style.display = 'none'; });
+    inputEl._acDropdown = dd;
   }
 
-  function selectAutocomplete(inputId, dropdownId, text) {
-    const input = document.getElementById(inputId);
-    const dropdown = document.getElementById(dropdownId);
-    if (input) input.value = text;
-    if (dropdown) { dropdown.style.display = 'none'; dropdown.innerHTML = ''; }
+  function acPick(el, inputId) {
+    const text = el.textContent.trim().replace(/^📍\s*/, '');
+    document.getElementById(inputId).value = text;
+    document.getElementById(inputId)._acDropdown.style.display = 'none';
     fetchRouteOptimization();
   }
 
-  // Script runs after body — DOM is already ready, call directly
-  setupAutocomplete('originInput', 'originDropdown');
-  setupAutocomplete('destInput', 'destDropdown');
+  makeDropdown(document.getElementById('originInput'));
+  makeDropdown(document.getElementById('destInput'));
 </script>
 </body>
 </html>
