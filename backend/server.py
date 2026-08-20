@@ -23,6 +23,7 @@ import route_optimizer
 import cctv_video_processor
 import scenario_simulator
 import telemetry_logger
+import bengaluru_osm_graph
 
 app = FastAPI(title="RoutePulse AI Engine & Command Center", version="2.0.0")
 
@@ -42,6 +43,7 @@ opt = route_optimizer.RouteOptimizer()
 video_proc = cctv_video_processor.CCTVVideoProcessor()
 scenario = scenario_simulator.ScenarioSimulator()
 logger = telemetry_logger.TelemetryLogger()
+osm_graph = bengaluru_osm_graph.BengaluruOSMGraph()
 
 current_simulation_state = scenario.simulate_scenario()
 
@@ -120,6 +122,10 @@ async def get_available_datasets():
 @app.get("/api/history/trends")
 async def get_history_trends(corridor: str = "Silk Board Junction"):
     return logger.get_24h_trends(corridor)
+
+@app.get("/api/osm/route")
+async def get_osm_route(origin: str = "silk_board", destination: str = "indiranagar"):
+    return osm_graph.find_shortest_route(origin, destination)
 
 # General API Telemetry & Optimization Routes
 @app.get("/api/info")
