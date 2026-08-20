@@ -400,7 +400,7 @@
           <input type="checkbox" id="simRainCheck"> 🌧️ Rain Impact
         </label>
         <label class="sim-toggle">
-          <input type="checkbox" id="simAccidentCheck"> 🚨 Silk Board Accident
+          <input type="checkbox" id="simAccidentCheck"> <span id="lblAccidentText">🚨 Silk Board Accident</span>
         </label>
         <label class="sim-toggle">
           <input type="checkbox" id="simClosureCheck"> 🚧 Lane Closure
@@ -717,6 +717,7 @@
   let leafletMap = null;
   let mapCorridorLine = null;
   let mapRerouteLine = null;
+  let currentAccidentLocation = "Silk Board Junction";
 
   function switchMonitorTab(mode) {
     const cctvBox = document.getElementById('cctvContainer');
@@ -1016,9 +1017,9 @@
     const banner = document.getElementById('incidentBanner');
     if (banner) {
       if (activeIncidentsCount > 0) {
-        document.getElementById('incidentBannerTitle').textContent = accident ? `🚨 CRITICAL INCIDENT: ${originName} → ${destName}` : `⚠️ TRAFFIC BOTTLENECK DETECTED`;
+        document.getElementById('incidentBannerTitle').textContent = accident ? `🚨 CRITICAL ACCIDENT: ${currentAccidentLocation.toUpperCase()}` : `⚠️ TRAFFIC BOTTLENECK DETECTED`;
         document.getElementById('incidentBannerSub').textContent = accident 
-          ? `Vehicle Collision Bottleneck — Estimated Speed Drop to 9 km/h (Signal Override & Reroute Active)` 
+          ? `Multi-Vehicle Collision at ${currentAccidentLocation} on ${originName.split(',')[0]} → ${destName.split(',')[0]} (Speed Drop to 8.2 km/h, Signals Overridden)` 
           : `High PCU Load on ${originName} → ${destName} — AI Recommending Optimal Reroute`;
         banner.style.display = "flex";
       } else {
@@ -1377,6 +1378,32 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
     if (mapRerouteLine && leafletMap.hasLayer(mapRerouteLine)) leafletMap.removeLayer(mapRerouteLine);
 
     activeRouteIndex = selectedIdx;
+
+    // Dynamically calculate realistic accident hotspot along the searched route
+    const oClean = oName.split(',')[0].trim();
+    const dClean = dName.split(',')[0].trim();
+    if (oName.toLowerCase().includes('kuppam') || dName.toLowerCase().includes('kuppam')) {
+      currentAccidentLocation = "Hosur / Attibele Highway";
+    } else if (oName.toLowerCase().includes('ponnai') || dName.toLowerCase().includes('ponnai') || oName.toLowerCase().includes('vit') || dName.toLowerCase().includes('vit')) {
+      currentAccidentLocation = "Ranipet / Katpadi Corridor";
+    } else if (allAvailableRoutes && allAvailableRoutes[0] && allAvailableRoutes[0].coords && allAvailableRoutes[0].coords.length > 0) {
+      const midIdx = Math.floor(allAvailableRoutes[0].coords.length / 2);
+      const midCoord = allAvailableRoutes[0].coords[midIdx];
+      let closestDev = devices[0];
+      let minD = 999999;
+      devices.forEach(d => {
+        const dist = Math.hypot(d.lat - midCoord[0], d.lng - midCoord[1]);
+        if (dist < minD) { minD = dist; closestDev = d; }
+      });
+      const rawName = closestDev.name.replace(/^CAM-\d+\s*/, '').replace(/^SAT-\d+\s*/, '');
+      currentAccidentLocation = `${rawName} Junction`;
+    } else {
+      currentAccidentLocation = `${oClean} → ${dClean} Mid-Corridor`;
+    }
+
+    const accLabelEl = document.getElementById('lblAccidentText');
+    if (accLabelEl) accLabelEl.textContent = `🚨 ${currentAccidentLocation} Accident`;
+
 
     // Draw all 3 routes on map
     allAvailableRoutes.forEach((rt, rIdx) => {
