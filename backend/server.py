@@ -22,6 +22,7 @@ import predictor
 import route_optimizer
 import cctv_video_processor
 import scenario_simulator
+import telemetry_logger
 
 app = FastAPI(title="RoutePulse AI Engine & Command Center", version="2.0.0")
 
@@ -40,6 +41,7 @@ pred = predictor.TrafficPredictor()
 opt = route_optimizer.RouteOptimizer()
 video_proc = cctv_video_processor.CCTVVideoProcessor()
 scenario = scenario_simulator.ScenarioSimulator()
+logger = telemetry_logger.TelemetryLogger()
 
 current_simulation_state = scenario.simulate_scenario()
 
@@ -115,6 +117,10 @@ async def get_available_datasets():
         ]
     }
 
+@app.get("/api/history/trends")
+async def get_history_trends(corridor: str = "Silk Board Junction"):
+    return logger.get_24h_trends(corridor)
+
 # General API Telemetry & Optimization Routes
 @app.get("/api/info")
 @app.get("/api")
@@ -160,4 +166,4 @@ async def trigger_emergency_greenwave(payload: Dict[str, Any] = Body(...)):
     return opt.activate_emergency_green_wave(corridor, hospital)
 
 if __name__ == "__main__":
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False, workers=2)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
