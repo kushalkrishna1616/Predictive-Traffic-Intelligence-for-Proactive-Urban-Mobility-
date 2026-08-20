@@ -821,30 +821,26 @@ function initLeafletMap() {
       // CCTV Vision AI Nodes
       { name: "CAM-3049 Silk Board Junction", road: "Hosur Road / ORR", lat: 12.9172, lng: 77.6228, pcu: "42.0 PCU", speed: "18 km/h", status: "SEVERE CONGESTION", type: "CCTV Vision AI", icon: cctvIcon },
       { name: "CAM-1923 Outer Ring Road (Bellandur)", road: "Outer Ring Road", lat: 12.9280, lng: 77.6760, pcu: "28.5 PCU", speed: "24 km/h", status: "MODERATE", type: "CCTV Vision AI", icon: cctvIcon },
-      { name: "CAM-4120 Tin Factory (KR Puram)", road: "Old Madras Road", lat: 13.0030, lng: 77.6700, pcu: "54.0 PCU", speed: "11 km/h", status: "CRITICAL", type: "CCTV Vision AI", icon: cctvIcon },
-      { name: "CAM-1055 Hebbal Flyover Junction", road: "Bellary Road", lat: 13.0350, lng: 77.5970, pcu: "18.2 PCU", speed: "38 km/h", status: "CLEAR", type: "CCTV Vision AI", icon: cctvIcon },
-      { name: "CAM-0812 MG Road Signal", road: "MG Road Arterial", lat: 12.9750, lng: 77.6080, pcu: "14.5 PCU", speed: "42 km/h", status: "CLEAR", type: "CCTV Vision AI", icon: cctvIcon },
-      { name: "CAM-5501 Indiranagar 100ft Road", road: "100ft Road Corridor", lat: 12.9710, lng: 77.6410, pcu: "22.0 PCU", speed: "31 km/h", status: "FLOWING", type: "CCTV Vision AI", icon: cctvIcon },
-      { name: "CAM-6210 Koramangala Sony World", road: "80ft Road Junction", lat: 12.9352, lng: 77.6245, pcu: "33.0 PCU", speed: "22 km/h", status: "MODERATE", type: "CCTV Vision AI", icon: cctvIcon },
-      { name: "CAM-7811 Electronic City Flyover", road: "Elevated Expressway", lat: 12.8452, lng: 77.6602, pcu: "19.0 PCU", speed: "58 km/h", status: "FAST FLOW", type: "CCTV Vision AI", icon: cctvIcon },
-      { name: "CAM-8902 Yeshwanthpur Junction", road: "Tumkur Road", lat: 13.0280, lng: 77.5410, pcu: "39.5 PCU", speed: "16 km/h", status: "HEAVY", type: "CCTV Vision AI", icon: cctvIcon },
+      // ── 10 CCTV VISION AI NODES ──
+      { id: "CAM-01", name: "CAM-3049 Silk Board Junction", road: "Hosur Road / Outer Ring Road", lat: 12.9172, lng: 77.6228, pcu: "42.0 PCU", speed: "18 km/h", status: "SEVERE CONGESTION", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_1.mp4" },
+      { id: "CAM-02", name: "CAM-1923 Bellandur Outer Ring Road", road: "Outer Ring Road Corridor", lat: 12.9280, lng: 77.6760, pcu: "28.5 PCU", speed: "24 km/h", status: "MODERATE", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_2.mp4" },
+      { id: "CAM-03", name: "CAM-4120 Tin Factory (KR Puram)", road: "Old Madras Road Arterial", lat: 13.0030, lng: 77.6700, pcu: "54.0 PCU", speed: "11 km/h", status: "CRITICAL", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_3.mp4" },
+      { id: "CAM-04", name: "CAM-1055 Hebbal Flyover Junction", road: "Bellary Road / Airport Corridor", lat: 13.0350, lng: 77.5970, pcu: "18.2 PCU", speed: "38 km/h", status: "CLEAR", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_4.mp4" },
+      { id: "CAM-05", name: "CAM-0812 MG Road Signal", road: "MG Road Central Arterial", lat: 12.9750, lng: 77.6080, pcu: "14.5 PCU", speed: "42 km/h", status: "CLEAR", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_5.mp4" },
+      { id: "CAM-06", name: "CAM-5501 Indiranagar 100ft Road", road: "100ft Road Corridor", lat: 12.9710, lng: 77.6410, pcu: "22.0 PCU", speed: "31 km/h", status: "FLOWING", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_6.mp4" },
+      { id: "CAM-07", name: "CAM-6210 Koramangala Sony World", road: "80ft Road Junction", lat: 12.9352, lng: 77.6245, pcu: "33.0 PCU", speed: "22 km/h", status: "MODERATE", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_7.mp4" },
+      { id: "CAM-08", name: "CAM-7811 Electronic City Elevated Toll", road: "Elevated Expressway", lat: 12.8452, lng: 77.6602, pcu: "19.0 PCU", speed: "58 km/h", status: "FAST FLOW", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_8.mp4" },
+      { id: "CAM-09", name: "CAM-8902 Yeshwanthpur Circle", road: "Tumkur Road NH48", lat: 13.0280, lng: 77.5410, pcu: "39.5 PCU", speed: "16 km/h", status: "HEAVY", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_9.mp4" },
+      { id: "CAM-10", name: "CAM-9104 Marathahalli Bridge Junction", road: "HAL Airport Road / ORR", lat: 12.9560, lng: 77.7010, pcu: "47.0 PCU", speed: "15 km/h", status: "CONGESTED", type: "CCTV Vision AI", icon: cctvIcon, video: "/static/videos/cctv/cctv_10.mp4" },
 
-      // IoT Loop & Radar Sensor Nodes
-      { name: "SENSOR-101 HSR Layout 27th Main", road: "HSR Sector 1", lat: 12.9116, lng: 77.6389, pcu: "16.0 PCU", speed: "36 km/h", status: "OPTIMAL", type: "Dual Radar Loop", icon: sensorIcon },
-      { name: "SENSOR-102 Agara Lake Flyover", road: "Agara Corridor", lat: 12.9250, lng: 77.6380, pcu: "21.0 PCU", speed: "30 km/h", status: "OPTIMAL", type: "IoT Acoustic Radar", icon: sensorIcon },
-      { name: "SENSOR-103 Marathahalli Bridge", road: "ORR Marathahalli", lat: 12.9560, lng: 77.7010, pcu: "48.0 PCU", speed: "14 km/h", status: "CONGESTED", type: "Infrared Vehicle Counter", icon: sensorIcon },
-      { name: "SENSOR-104 Whitefield ITPL Main", road: "ITPL Corridor", lat: 12.9860, lng: 77.7340, pcu: "41.0 PCU", speed: "19 km/h", status: "HEAVY", type: "Acoustic Flow Sensor", icon: sensorIcon },
-      { name: "SENSOR-105 Domlur Flyover", road: "Inner Ring Road", lat: 12.9610, lng: 77.6380, pcu: "26.0 PCU", speed: "29 km/h", status: "FLOWING", type: "IoT Loop Detector", icon: sensorIcon },
-      { name: "SENSOR-106 Richmond Circle", road: "RRMR Road", lat: 12.9600, lng: 77.5970, pcu: "29.0 PCU", speed: "25 km/h", status: "MODERATE", type: "Radar Speed Sensor", icon: sensorIcon },
-      { name: "SENSOR-107 Dairy Circle Junction", road: "Bannerghatta Road", lat: 12.9380, lng: 77.5980, pcu: "35.0 PCU", speed: "20 km/h", status: "MODERATE", type: "Bluetooth Traffic Probe", icon: sensorIcon }
-    ];
-
-    const VIDEO_FEEDS = [
-      "/static/videos/traffic1.mp4",
-      "/static/videos/traffic2_night.mp4",
-      "/static/videos/traffic3_thermal.mp4",
-      "/static/videos/traffic4_highway.mp4",
-      "/static/videos/traffic5_rain.mp4"
+      // ── 7 IOT SENSOR NODES ──
+      { id: "SEN-01", name: "SENSOR-101 HSR Layout 27th Main", road: "HSR Sector 1 Corridor", lat: 12.9116, lng: 77.6389, pcu: "16.0 PCU", speed: "36 km/h", status: "OPTIMAL", type: "Dual Radar Loop", icon: sensorIcon, video: "/static/videos/sensors/sensor_1.mp4" },
+      { id: "SEN-02", name: "SENSOR-102 Agara Lake Flyover", road: "Agara Corridor Outer Ring Road", lat: 12.9250, lng: 77.6380, pcu: "21.0 PCU", speed: "30 km/h", status: "OPTIMAL", type: "IoT Acoustic Radar", icon: sensorIcon, video: "/static/videos/sensors/sensor_2.mp4" },
+      { id: "SEN-03", name: "SENSOR-103 Whitefield ITPL Main", road: "ITPL Tech Corridor", lat: 12.9860, lng: 77.7340, pcu: "41.0 PCU", speed: "19 km/h", status: "HEAVY", type: "Infrared Vehicle Counter", icon: sensorIcon, video: "/static/videos/sensors/sensor_3.mp4" },
+      { id: "SEN-04", name: "SENSOR-104 Domlur Flyover", road: "Inner Ring Road", lat: 12.9610, lng: 77.6380, pcu: "26.0 PCU", speed: "29 km/h", status: "FLOWING", type: "IoT Loop Detector", icon: sensorIcon, video: "/static/videos/sensors/sensor_4.mp4" },
+      { id: "SEN-05", name: "SENSOR-105 Richmond Circle", road: "RRMR Road", lat: 12.9600, lng: 77.5970, pcu: "29.0 PCU", speed: "25 km/h", status: "MODERATE", type: "Radar Speed Sensor", icon: sensorIcon, video: "/static/videos/sensors/sensor_5.mp4" },
+      { id: "SEN-06", name: "SENSOR-106 Dairy Circle Junction", road: "Bannerghatta Road Arterial", lat: 12.9380, lng: 77.5980, pcu: "35.0 PCU", speed: "20 km/h", status: "MODERATE", type: "Bluetooth Traffic Probe", icon: sensorIcon, video: "/static/videos/sensors/sensor_6.mp4" },
+      { id: "SEN-07", name: "SENSOR-107 Chikkalsandra Circle", road: "Uttarahalli Main Road", lat: 12.9150, lng: 77.5450, pcu: "31.5 PCU", speed: "23 km/h", status: "FLOWING", type: "Optical Flow LiDAR", icon: sensorIcon, video: "/static/videos/sensors/sensor_7.mp4" }
     ];
 
     devices.forEach((d, idx) => {
@@ -854,37 +850,23 @@ function initLeafletMap() {
       const statusColor = isCritical ? "#FB6169" : (isClear ? "#34D399" : "#FFB547");
       const isCam = d.type.includes("CCTV") || d.type.includes("Vision");
 
-      const selectedVideo = VIDEO_FEEDS[idx % VIDEO_FEEDS.length];
-      const timeOffset = (idx * 2.5) % 15;
+      const selectedVideo = d.video || `/static/videos/cctv/cctv_${(idx % 10) + 1}.mp4`;
+      const timeOffset = (idx * 2) % 15;
+      const borderColor = isCam ? "#38BDF8" : "#34D399";
+      const tagLabel = isCam ? "● LIVE CCTV FEED" : "● LIVE SENSOR FEED";
 
-      const liveMediaHtml = isCam ? `
-        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid #38BDF8; position:relative; background:#000;">
+      const liveMediaHtml = `
+        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${borderColor}; position:relative; background:#000;">
           <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block;"
-            src="${selectedVideo}#t=${timeOffset}"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            src="${selectedVideo}#t=${timeOffset}">
           </video>
-          <img src="/api/video/frame" style="width:100%; height:120px; object-fit:cover; display:none;" alt="Live AI CCTV Frame" />
-          <div style="position:absolute; top:5px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">● LIVE AI FEED</div>
-          <div style="position:absolute; bottom:5px; right:6px; background:rgba(0,0,0,0.75); color:#38BDF8; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">CAM-FPS: 30.0</div>
+          <div style="position:absolute; top:5px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">${tagLabel}</div>
+          <div style="position:absolute; bottom:5px; right:6px; background:rgba(0,0,0,0.75); color:${borderColor}; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">FPS: 30.0</div>
         </div>
-        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE CCTV: ${d.name}'; document.getElementById('cameraHudId').textContent='FEED: ${d.name}';" 
-          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, #38BDF8, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
+        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE: ${d.name}'; document.getElementById('cameraHudId').textContent='FEED: ${d.name}';" 
+          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, ${borderColor}, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
           📺 VIEW IN MAIN MONITOR
         </button>
-      ` : `
-        <div style="margin-top:8px; background:#0F172A; border:1px solid #34D399; border-radius:8px; padding:10px; font-family:monospace;">
-          <div style="display:flex; justify-content:space-between; font-size:10px; color:#34D399; margin-bottom:6px;">
-            <span>📡 RADAR FREQ: 77 GHz</span>
-            <span>SAMPLING: 100 Hz</span>
-          </div>
-          <div style="height:26px; display:flex; align-items:flex-end; gap:3px; justify-content:center; background:rgba(52,211,153,0.08); border-radius:4px; padding:4px;">
-            <div style="width:5px; height:18px; background:#34D399; border-radius:2px;"></div>
-            <div style="width:5px; height:24px; background:#34D399; border-radius:2px;"></div>
-            <div style="width:5px; height:12px; background:#34D399; border-radius:2px;"></div>
-            <div style="width:5px; height:20px; background:#34D399; border-radius:2px;"></div>
-            <div style="width:5px; height:15px; background:#34D399; border-radius:2px;"></div>
-          </div>
-        </div>
       `;
 
       m.bindPopup(L.popup({ maxWidth: 260 }).setContent(`

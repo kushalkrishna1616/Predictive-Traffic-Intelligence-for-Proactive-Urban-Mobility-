@@ -69,6 +69,15 @@ async def serve_v2():
 async def serve_v1():
     return FileResponse(HTML_V1)
 
+# Dynamic Camera and Sensor Configuration Endpoint
+@app.get("/api/cameras")
+async def get_camera_config():
+    cfg_path = os.path.join(PROJECT_ROOT, "camera_config.json")
+    if os.path.exists(cfg_path):
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"cctv_cameras": [], "iot_sensors": []}
+
 # Live OpenCV CCTV Video Stream & Frame Endpoints
 @app.get("/api/video/frame")
 async def get_video_frame():
