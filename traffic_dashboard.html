@@ -1063,6 +1063,9 @@
 
     const simState = { volume_multiplier, rain_active, accident_corridor: accident, lane_closure_active };
 
+    // Recompute multi-routes dynamically to shift optimal path if rain/muddy road is active!
+    await fetchRouteOptimization();
+
     const activeRoute = (allAvailableRoutes && allAvailableRoutes[activeRouteIndex]) || (allAvailableRoutes && allAvailableRoutes[0]);
     const originText = document.getElementById('originInput')?.value || "Origin";
     const destText = document.getElementById('destInput')?.value || "Destination";
@@ -1289,58 +1292,123 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
     const baseKm = parseFloat(osrmRoutes[0].distKm) || 8.0;
     const baseMin = parseInt(osrmRoutes[0].durationMin) || 18;
 
-    // Build 3 comprehensive routes (Optimal + 2 Alternatives)
+        const isRain = document.getElementById('simRainCheck')?.checked || false;
+
+    // Build 3 comprehensive routes with Proactive Weather & Muddy Road Intelligence
     const finalRoutes = [];
 
-    // Route 1: Optimal Route
-    finalRoutes.push({
-      coords: baseCoords,
-      distKm: baseKm.toFixed(1),
-      durationMin: baseMin,
-      name: "⭐ OPTIMAL AI ROUTE (Fastest Flow)",
-      via: `Direct Arterial via ${oName} → ${dName}`,
-      tag: "OPTIMAL",
-      color: "#38BDF8",
-      pcuAvg: "24.2 PCU",
-      speedAvg: "38 km/h",
-      delayMin: "+0m",
-      dashArray: null,
-      routeIndex: 0
-    });
+    if (isRain) {
+      // 🌧️ RAIN PREDICTED: Route 1 suffers from muddy terrain / waterlogging; Route 2 (Asphalt Bypass) is promoted to OPTIMAL!
+      
+      // Promoted Route: Elevated Asphalt Bypass
+      const bypassCoords = osrmRoutes.length > 1 ? osrmRoutes[1].coords : createOffsetRoute(baseCoords, 0.22, oLat, oLng, dLat, dLng);
+      finalRoutes.push({
+        coords: bypassCoords,
+        distKm: (baseKm * 1.08).toFixed(1),
+        durationMin: Math.round(baseMin * 1.10),
+        name: "⭐ OPTIMAL AI ROUTE (Weather-Proof Elevated Bypass)",
+        via: `Elevated Asphalt Corridor via ${oName} → ${dName} (Mud-Free Anti-Skid)`,
+        tag: "WEATHER-PROOF",
+        color: "#38BDF8",
+        pcuAvg: "26.4 PCU",
+        speedAvg: "36 km/h",
+        delayMin: "+0m",
+        dashArray: null,
+        isMuddy: false,
+        routeIndex: 0
+      });
 
-    // Route 2: Alternative Route A
-    const alt1Coords = osrmRoutes.length > 1 ? osrmRoutes[1].coords : createOffsetRoute(baseCoords, 0.22, oLat, oLng, dLat, dLng);
-    finalRoutes.push({
-      coords: alt1Coords,
-      distKm: (baseKm * 1.12).toFixed(1),
-      durationMin: Math.round(baseMin * 1.25),
-      name: "⚡ ALTERNATIVE ROUTE A (Arterial Loop)",
-      via: `Via Outer Ring Road / 80ft Corridor`,
-      tag: "MODERATE",
-      color: "#F59E0B",
-      pcuAvg: "36.5 PCU",
-      speedAvg: "24 km/h",
-      delayMin: "+4.5m",
-      dashArray: "7, 8",
-      routeIndex: 1
-    });
+      // Muddy Hazard Route: Old Direct Arterial
+      finalRoutes.push({
+        coords: baseCoords,
+        distKm: baseKm.toFixed(1),
+        durationMin: Math.round(baseMin * 1.58),
+        name: "🌧️ DIRECT ARTERIAL (Muddy Unpaved Friction & Waterlogging)",
+        via: `Low-Lying Muddy Terrain along ${oName} → ${dName} (Severe Slippage Risk)`,
+        tag: "MUDDY HAZARD",
+        color: "#FB6169",
+        pcuAvg: "58.2 PCU",
+        speedAvg: "13 km/h",
+        delayMin: "+38m",
+        dashArray: "4, 6",
+        isMuddy: true,
+        routeIndex: 1
+      });
 
-    // Route 3: Alternative Route B (Congested Bottleneck)
-    const alt2Coords = osrmRoutes.length > 2 ? osrmRoutes[2].coords : createOffsetRoute(baseCoords, -0.24, oLat, oLng, dLat, dLng);
-    finalRoutes.push({
-      coords: alt2Coords,
-      distKm: (baseKm * 1.22).toFixed(1),
-      durationMin: Math.round(baseMin * 1.65),
-      name: "⚠️ ALTERNATIVE ROUTE B (High Bottleneck)",
-      via: `Via Central Junction Bottleneck Bypass`,
-      tag: "CONGESTED",
-      color: "#FB6169",
-      pcuAvg: "52.8 PCU",
-      speedAvg: "14 km/h",
-      delayMin: "+11.0m",
-      dashArray: "4, 6",
-      routeIndex: 2
-    });
+      // Third Alternative: Central Urban Bottleneck
+      const alt2Coords = osrmRoutes.length > 2 ? osrmRoutes[2].coords : createOffsetRoute(baseCoords, -0.24, oLat, oLng, dLat, dLng);
+      finalRoutes.push({
+        coords: alt2Coords,
+        distKm: (baseKm * 1.25).toFixed(1),
+        durationMin: Math.round(baseMin * 1.72),
+        name: "⚠️ ALTERNATIVE ROUTE B (Urban Bottleneck)",
+        via: `Via Central Urban Bypass Corridor`,
+        tag: "CONGESTED",
+        color: "#F59E0B",
+        pcuAvg: "51.0 PCU",
+        speedAvg: "15 km/h",
+        delayMin: "+44m",
+        dashArray: "7, 8",
+        isMuddy: false,
+        routeIndex: 2
+      });
+
+    } else {
+      // ☀️ DRY WEATHER: Standard Direct Arterial is Optimal
+
+      // Route 1: Optimal Route
+      finalRoutes.push({
+        coords: baseCoords,
+        distKm: baseKm.toFixed(1),
+        durationMin: baseMin,
+        name: "⭐ OPTIMAL AI ROUTE (Fastest Flow)",
+        via: `Direct Arterial via ${oName} → ${dName}`,
+        tag: "OPTIMAL",
+        color: "#38BDF8",
+        pcuAvg: "24.2 PCU",
+        speedAvg: "38 km/h",
+        delayMin: "+0m",
+        dashArray: null,
+        isMuddy: false,
+        routeIndex: 0
+      });
+
+      // Route 2: Alternative Route A
+      const alt1Coords = osrmRoutes.length > 1 ? osrmRoutes[1].coords : createOffsetRoute(baseCoords, 0.22, oLat, oLng, dLat, dLng);
+      finalRoutes.push({
+        coords: alt1Coords,
+        distKm: (baseKm * 1.12).toFixed(1),
+        durationMin: Math.round(baseMin * 1.25),
+        name: "⚡ ALTERNATIVE ROUTE A (Arterial Loop)",
+        via: `Via Outer Ring Road / 80ft Corridor`,
+        tag: "MODERATE",
+        color: "#F59E0B",
+        pcuAvg: "36.5 PCU",
+        speedAvg: "24 km/h",
+        delayMin: "+4.5m",
+        dashArray: "7, 8",
+        isMuddy: false,
+        routeIndex: 1
+      });
+
+      // Route 3: Alternative Route B (Congested Bottleneck)
+      const alt2Coords = osrmRoutes.length > 2 ? osrmRoutes[2].coords : createOffsetRoute(baseCoords, -0.24, oLat, oLng, dLat, dLng);
+      finalRoutes.push({
+        coords: alt2Coords,
+        distKm: (baseKm * 1.22).toFixed(1),
+        durationMin: Math.round(baseMin * 1.65),
+        name: "⚠️ ALTERNATIVE ROUTE B (High Bottleneck)",
+        via: `Via Central Junction Bottleneck Bypass`,
+        tag: "CONGESTED",
+        color: "#FB6169",
+        pcuAvg: "52.8 PCU",
+        speedAvg: "14 km/h",
+        delayMin: "+11.0m",
+        dashArray: "4, 6",
+        isMuddy: false,
+        routeIndex: 2
+      });
+    }
 
     allAvailableRoutes = finalRoutes;
     renderMultiRoutesOnMap(0, oLat, oLng, dLat, dLng, oName, dName);
@@ -1541,22 +1609,36 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
 
     if (metaEl) metaEl.textContent = `${allAvailableRoutes.length} CORRIDORS ANALYZED`;
 
-    listEl.innerHTML = allAvailableRoutes.map((rt, idx) => {
+        listEl.innerHTML = allAvailableRoutes.map((rt, idx) => {
       const isSel = idx === activeRouteIndex;
       const isOptimal = idx === 0;
-      const ringCol = isOptimal ? '#34D399' : (idx === 1 ? '#FFB547' : '#FB6169');
-      const congPct = isOptimal ? 32 : (idx === 1 ? 58 : 89);
+      const isMuddy = rt.isMuddy || rt.tag === 'MUDDY HAZARD';
+      const isWeatherProof = rt.tag === 'WEATHER-PROOF';
+
+      let ringCol = isOptimal ? '#34D399' : (idx === 1 ? '#FFB547' : '#FB6169');
+      let congPct = isOptimal ? 32 : (idx === 1 ? 58 : 89);
+      if (isWeatherProof) { ringCol = '#38BDF8'; congPct = 28; }
+      if (isMuddy) { ringCol = '#FB6169'; congPct = 94; }
+
       const dashOffset = Math.round(132 - (132 * (congPct / 100)));
       
-      const badgeHtml = isOptimal 
+      let badgeHtml = isOptimal 
         ? `<span class="best-tag" style="background:rgba(52,211,153,0.15); color:#34D399; border:1px solid rgba(52,211,153,0.3); font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;">⭐ AI Recommended</span>`
         : (idx === 1 
           ? `<span style="background:rgba(255,181,71,0.15); color:#FFB547; border:1px solid rgba(255,181,71,0.3); font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px;">⚡ Arterial Loop</span>`
           : `<span style="background:rgba(251,97,105,0.15); color:#FB6169; border:1px solid rgba(251,97,105,0.3); font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px;">⚠️ Bottleneck +${rt.delayMin}</span>`);
 
-      const savedHtml = isOptimal 
+      if (isWeatherProof) {
+        badgeHtml = `<span class="best-tag" style="background:rgba(56,189,248,0.22); color:#38BDF8; border:1px solid rgba(56,189,248,0.5); font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;">⭐ Weather-Proof Bypass</span>`;
+      } else if (isMuddy) {
+        badgeHtml = `<span style="background:rgba(251,97,105,0.22); color:#FB6169; border:1px solid rgba(251,97,105,0.5); font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;">🌧️ Muddy / Waterlogged</span>`;
+      }
+
+      let savedHtml = isOptimal 
         ? `(Saved ${Math.round(rt.durationMin * 0.4)}m)` 
         : `(+${rt.delayMin || '5m'})`;
+      if (isWeatherProof) savedHtml = `(Avoids Muddy Terrain)`;
+      if (isMuddy) savedHtml = `(+38m mud delay)`;
 
       const cardBorder = isSel ? `border: 2px solid ${rt.color}; background: rgba(56,189,248,0.12); box-shadow: 0 0 14px rgba(56,189,248,0.25);` : 'border: 1px solid rgba(255,255,255,0.08);';
 
@@ -1572,11 +1654,12 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
           </div>
           <div class="route-body">
             <div class="route-card-top" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-              <span class="route-name" style="font-weight:700; font-size:12.5px; color:${isSel ? '#FFF' : '#E2E8F0'};">${rt.name.split('(')[0]}</span>
+              <span class="route-name" style="font-weight:700; font-size:12px; color:${isSel ? '#FFF' : '#E2E8F0'};">${rt.name.split('(')[0]}</span>
               ${badgeHtml}
             </div>
+            <div style="font-size:10.5px; color:#64748B; margin-bottom:4px;">${rt.via}</div>
             <div class="route-stats" style="display:flex; justify-content:space-between; font-size:11px; color:#94A3B8;">
-              <span><b>${rt.durationMin} min</b> ETA <span style="color:${isOptimal ? '#34D399' : '#F59E0B'}">${savedHtml}</span></span>
+              <span><b>${rt.durationMin} min</b> ETA <span style="color:${isWeatherProof ? '#38BDF8' : (isMuddy ? '#FB6169' : '#34D399')}">${savedHtml}</span></span>
               <span><b>${rt.distKm} km</b> · <span style="font-weight:700; color:${ringCol}">${rt.speedAvg}</span></span>
             </div>
           </div>
