@@ -853,10 +853,8 @@
 
     const VIDEO_FEEDS = [
       "/static/videos/traffic1.mp4",
-      "/static/videos/traffic2_night.mp4",
-      "/static/videos/traffic3_thermal.mp4",
-      "/static/videos/traffic4_highway.mp4",
-      "/static/videos/traffic5_rain.mp4"
+      "/static/videos/traffic2_cars.mp4",
+      "/static/videos/traffic3_cardetect.mp4"
     ];
 
     devices.forEach((d, idx) => {
@@ -867,36 +865,22 @@
       const isCam = d.type.includes("CCTV") || d.type.includes("Vision");
 
       const selectedVideo = VIDEO_FEEDS[idx % VIDEO_FEEDS.length];
-      const timeOffset = (idx * 2.5) % 15;
+      const timeOffset = (idx * 3.5) % 15;
+      const borderColor = isCam ? "#38BDF8" : "#34D399";
+      const tagLabel = isCam ? "● LIVE CCTV FEED" : "● LIVE IOT SENSOR FEED";
 
-      const liveMediaHtml = isCam ? `
-        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid #38BDF8; position:relative; background:#000;">
+      const liveMediaHtml = `
+        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${borderColor}; position:relative; background:#000;">
           <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block;"
-            src="${selectedVideo}#t=${timeOffset}"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            src="${selectedVideo}#t=${timeOffset}">
           </video>
-          <img src="/api/video/frame" style="width:100%; height:120px; object-fit:cover; display:none;" alt="Live AI CCTV Frame" />
-          <div style="position:absolute; top:5px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">● LIVE AI FEED</div>
-          <div style="position:absolute; bottom:5px; right:6px; background:rgba(0,0,0,0.75); color:#38BDF8; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">CAM-FPS: 30.0</div>
+          <div style="position:absolute; top:5px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">${tagLabel}</div>
+          <div style="position:absolute; bottom:5px; right:6px; background:rgba(0,0,0,0.75); color:${borderColor}; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">FPS: 30.0</div>
         </div>
-        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE CCTV: ${d.name}'; document.getElementById('cameraHudId').textContent='FEED: ${d.name}';" 
-          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, #38BDF8, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
+        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE: ${d.name}'; document.getElementById('cameraHudId').textContent='FEED: ${d.name}';" 
+          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, ${borderColor}, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
           📺 VIEW IN MAIN MONITOR
         </button>
-      ` : `
-        <div style="margin-top:8px; background:#0F172A; border:1px solid #34D399; border-radius:8px; padding:10px; font-family:monospace;">
-          <div style="display:flex; justify-content:space-between; font-size:10px; color:#34D399; margin-bottom:6px;">
-            <span>📡 RADAR FREQ: 77 GHz</span>
-            <span>SAMPLING: 100 Hz</span>
-          </div>
-          <div style="height:26px; display:flex; align-items:flex-end; gap:3px; justify-content:center; background:rgba(52,211,153,0.08); border-radius:4px; padding:4px;">
-            <div style="width:5px; height:18px; background:#34D399; border-radius:2px; animation:pulse 1s infinite alternate;"></div>
-            <div style="width:5px; height:24px; background:#34D399; border-radius:2px; animation:pulse 0.7s infinite alternate;"></div>
-            <div style="width:5px; height:12px; background:#34D399; border-radius:2px; animation:pulse 1.2s infinite alternate;"></div>
-            <div style="width:5px; height:20px; background:#34D399; border-radius:2px; animation:pulse 0.9s infinite alternate;"></div>
-            <div style="width:5px; height:15px; background:#34D399; border-radius:2px; animation:pulse 1.1s infinite alternate;"></div>
-          </div>
-        </div>
       `;
 
       m.bindPopup(L.popup({ maxWidth: 260 }).setContent(`
@@ -1252,36 +1236,21 @@
 
       // Build CCTV live popup with distinct video feed and timestamp
       const selectedRouteVideo = VIDEO_FEEDS[i % VIDEO_FEEDS.length];
-      const timeOffset = (i * 2.5) % 15;
+      const timeOffset = (i * 3.5) % 15;
+      const tagLabel = isCam ? "● LIVE CCTV FEED" : "● LIVE SENSOR FEED";
 
-      const liveVideoHtml = isCam ? `
+      const liveMediaHtml = `
         <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${col}; position:relative; background:#000;">
           <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block;"
-            src="${selectedRouteVideo}#t=${timeOffset}"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            src="${selectedRouteVideo}#t=${timeOffset}">
           </video>
-          <img src="/api/video/frame" style="width:100%; height:120px; object-fit:cover; display:none;" alt="Live CCTV AI Frame" />
-          <div style="position:absolute; top:4px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">● LIVE FEED</div>
+          <div style="position:absolute; top:4px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">${tagLabel}</div>
           <div style="position:absolute; bottom:4px; right:6px; background:rgba(0,0,0,0.75); color:#38BDF8; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">${new Date().toLocaleTimeString('en-IN',{hour12:false})}</div>
         </div>
-        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE CCTV: ${devId} (${devType})'; document.getElementById('cameraHudId').textContent='FEED: ${devId}'; " 
-          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, #38BDF8, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
+        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE: ${devId} (${devType})'; document.getElementById('cameraHudId').textContent='FEED: ${devId}'; " 
+          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, ${col}, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
           📺 VIEW IN MAIN MONITOR
         </button>
-      ` : `
-        <div style="margin-top:8px; background:#0F172A; border:1px solid #34D399; border-radius:8px; padding:10px; font-family:monospace;">
-          <div style="display:flex; justify-content:space-between; font-size:10px; color:#34D399; margin-bottom:6px;">
-            <span>📡 TELEMETRY: REAL-TIME</span>
-            <span>FREQ: 77 GHz</span>
-          </div>
-          <div style="height:24px; display:flex; align-items:flex-end; gap:3px; justify-content:center; background:rgba(52,211,153,0.08); border-radius:4px; padding:4px;">
-            <div style="width:5px; height:18px; background:#34D399; border-radius:2px;"></div>
-            <div style="width:5px; height:24px; background:#34D399; border-radius:2px;"></div>
-            <div style="width:5px; height:12px; background:#34D399; border-radius:2px;"></div>
-            <div style="width:5px; height:20px; background:#34D399; border-radius:2px;"></div>
-            <div style="width:5px; height:16px; background:#34D399; border-radius:2px;"></div>
-          </div>
-        </div>
       `;
 
       marker.bindPopup(L.popup({maxWidth:260}).setContent(`
