@@ -733,62 +733,93 @@
         initLeafletMap();
       }
       setTimeout(() => {
-        if (leafletMap) {
-          leafletMap.invalidateSize();
-          if (mapCorridorLine) {
-            leafletMap.fitBounds(mapCorridorLine.getBounds(), { padding: [50, 50] });
-          } else {
-            leafletMap.setView([12.9550, 77.6350], 12);
-          }
-        }
-      }, 100);
-    }
-  }
-
-  function initLeafletMap() {
+function initLeafletMap() {
     mapInitialized = true;
-    leafletMap = L.map('leafletMap').setView([12.9550, 77.6350], 12);
-
-    const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      maxZoom: 19
+    leafletMap = L.map('leafletMap', {
+      center: [12.9550, 77.6350],
+      zoom: 13,
+      maxZoom: 19,
+      scrollWheelZoom: true
     });
 
     const osmStandard = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 19
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+      maxNativeZoom: 19
+    });
+
+    const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      maxZoom: 19,
+      maxNativeZoom: 19
     });
 
     const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: '&copy; Esri World Imagery',
-      maxZoom: 19
+      maxZoom: 19,
+      maxNativeZoom: 19
     });
 
-    darkTiles.addTo(leafletMap);
+    // Default to Light OpenStreetMap Standard view as requested by user
+    osmStandard.addTo(leafletMap);
 
     const baseMaps = {
+      "🗺️ OpenStreetMap Standard (Light)": osmStandard,
       "🌑 Dark Cyberpunk": darkTiles,
-      "🗺️ OpenStreetMap Standard": osmStandard,
       "🛰️ Satellite View": esriSatellite
     };
 
     L.control.layers(baseMaps, null, { position: 'topright' }).addTo(leafletMap);
 
-    const cameras = [
-      { name: "CAM-3049 Silk Board Junction", lat: 12.9172, lng: 77.6228, pcu: "42%", status: "SEVERE" },
-      { name: "CAM-1923 Outer Ring Road (Bellandur)", lat: 12.9280, lng: 77.6760, pcu: "68%", status: "MODERATE" },
-      { name: "CAM-4120 Tin Factory (KR Puram)", lat: 13.0030, lng: 77.6700, pcu: "89%", status: "CRITICAL" },
-      { name: "CAM-1055 Hebbal Flyover Junction", lat: 13.0350, lng: 77.5970, pcu: "31%", status: "CLEAR" },
-      { name: "CAM-0812 MG Road Signal", lat: 12.9750, lng: 77.6080, pcu: "25%", status: "CLEAR" }
+    // Custom pins for CCTV Cameras and IoT Sensors
+    const createPin = (label, color, border) => L.divIcon({
+      className: 'custom-map-pin',
+      html: `<div style="background:#0F172A; color:${color}; border:2px solid ${border}; padding:3px 7px; border-radius:10px; font-family:monospace; font-size:10px; font-weight:700; white-space:nowrap; box-shadow:0 0 10px ${border};">${label}</div>`,
+      iconSize: [70, 24],
+      iconAnchor: [35, 12]
+    });
+
+    const cctvIcon = createPin("📹 CCTV AI", "#38BDF8", "rgba(56,189,248,0.8)");
+    const sensorIcon = createPin("📡 SENSOR", "#34D399", "rgba(52,211,153,0.8)");
+
+    const devices = [
+      // CCTV Vision AI Nodes
+      { name: "CAM-3049 Silk Board Junction", road: "Hosur Road / ORR", lat: 12.9172, lng: 77.6228, pcu: "42.0 PCU", speed: "18 km/h", status: "SEVERE CONGESTION", type: "CCTV Vision AI", icon: cctvIcon },
+      { name: "CAM-1923 Outer Ring Road (Bellandur)", road: "Outer Ring Road", lat: 12.9280, lng: 77.6760, pcu: "28.5 PCU", speed: "24 km/h", status: "MODERATE", type: "CCTV Vision AI", icon: cctvIcon },
+      { name: "CAM-4120 Tin Factory (KR Puram)", road: "Old Madras Road", lat: 13.0030, lng: 77.6700, pcu: "54.0 PCU", speed: "11 km/h", status: "CRITICAL", type: "CCTV Vision AI", icon: cctvIcon },
+      { name: "CAM-1055 Hebbal Flyover Junction", road: "Bellary Road", lat: 13.0350, lng: 77.5970, pcu: "18.2 PCU", speed: "38 km/h", status: "CLEAR", type: "CCTV Vision AI", icon: cctvIcon },
+      { name: "CAM-0812 MG Road Signal", road: "MG Road Arterial", lat: 12.9750, lng: 77.6080, pcu: "14.5 PCU", speed: "42 km/h", status: "CLEAR", type: "CCTV Vision AI", icon: cctvIcon },
+      { name: "CAM-5501 Indiranagar 100ft Road", road: "100ft Road Corridor", lat: 12.9710, lng: 77.6410, pcu: "22.0 PCU", speed: "31 km/h", status: "FLOWING", type: "CCTV Vision AI", icon: cctvIcon },
+      { name: "CAM-6210 Koramangala Sony World", road: "80ft Road Junction", lat: 12.9352, lng: 77.6245, pcu: "33.0 PCU", speed: "22 km/h", status: "MODERATE", type: "CCTV Vision AI", icon: cctvIcon },
+      { name: "CAM-7811 Electronic City Flyover", road: "Elevated Expressway", lat: 12.8452, lng: 77.6602, pcu: "19.0 PCU", speed: "58 km/h", status: "FAST FLOW", type: "CCTV Vision AI", icon: cctvIcon },
+      { name: "CAM-8902 Yeshwanthpur Junction", road: "Tumkur Road", lat: 13.0280, lng: 77.5410, pcu: "39.5 PCU", speed: "16 km/h", status: "HEAVY", type: "CCTV Vision AI", icon: cctvIcon },
+
+      // IoT Loop & Radar Sensor Nodes
+      { name: "SENSOR-101 HSR Layout 27th Main", road: "HSR Sector 1", lat: 12.9116, lng: 77.6389, pcu: "16.0 PCU", speed: "36 km/h", status: "OPTIMAL", type: "Dual Radar Loop", icon: sensorIcon },
+      { name: "SENSOR-102 Agara Lake Flyover", road: "Agara Corridor", lat: 12.9250, lng: 77.6380, pcu: "21.0 PCU", speed: "30 km/h", status: "OPTIMAL", type: "IoT Acoustic Radar", icon: sensorIcon },
+      { name: "SENSOR-103 Marathahalli Bridge", road: "ORR Marathahalli", lat: 12.9560, lng: 77.7010, pcu: "48.0 PCU", speed: "14 km/h", status: "CONGESTED", type: "Infrared Vehicle Counter", icon: sensorIcon },
+      { name: "SENSOR-104 Whitefield ITPL Main", road: "ITPL Corridor", lat: 12.9860, lng: 77.7340, pcu: "41.0 PCU", speed: "19 km/h", status: "HEAVY", type: "Acoustic Flow Sensor", icon: sensorIcon },
+      { name: "SENSOR-105 Domlur Flyover", road: "Inner Ring Road", lat: 12.9610, lng: 77.6380, pcu: "26.0 PCU", speed: "29 km/h", status: "FLOWING", type: "IoT Loop Detector", icon: sensorIcon },
+      { name: "SENSOR-106 Richmond Circle", road: "RRMR Road", lat: 12.9600, lng: 77.5970, pcu: "29.0 PCU", speed: "25 km/h", status: "MODERATE", type: "Radar Speed Sensor", icon: sensorIcon },
+      { name: "SENSOR-107 Dairy Circle Junction", road: "Bannerghatta Road", lat: 12.9380, lng: 77.5980, pcu: "35.0 PCU", speed: "20 km/h", status: "MODERATE", type: "Bluetooth Traffic Probe", icon: sensorIcon }
     ];
 
-    cameras.forEach(c => {
-      const m = L.marker([c.lat, c.lng]).addTo(leafletMap);
+    devices.forEach(d => {
+      const m = L.marker([d.lat, d.lng], { icon: d.icon }).addTo(leafletMap);
+      const isCritical = d.status.includes("CRITICAL") || d.status.includes("SEVERE") || d.status.includes("HEAVY");
+      const isClear = d.status.includes("CLEAR") || d.status.includes("FAST") || d.status.includes("OPTIMAL");
+      const statusColor = isCritical ? "#FB6169" : (isClear ? "#34D399" : "#FFB547");
+
       m.bindPopup(`
-        <div style="font-family:sans-serif; color:#0d111c;">
-          <b style="color:#1d8ba8;">${c.name}</b><br>
-          Live PCU Index: <b>${c.pcu}</b><br>
-          Status: <b style="color:${c.status === 'CRITICAL' ? '#fb6169' : (c.status === 'MODERATE' ? '#ffb547' : '#34d399')};">${c.status}</b>
+        <div style="font-family:'Inter',sans-serif; padding:4px 2px; color:#0D111C; min-width:180px;">
+          <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">${d.type}</div>
+          <div style="font-size:13px; font-weight:700; color:#0F172A; margin:2px 0 4px;">${d.name}</div>
+          <div style="font-size:11.5px; color:#64748B; margin-bottom:8px;">📍 ${d.road}</div>
+          <div style="background:#F1F5F9; padding:8px 10px; border-radius:6px; font-family:monospace; font-size:11px; display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>PCU Load: <b>${d.pcu}</b></span>
+            <span>Speed: <b>${d.speed}</b></span>
+          </div>
+          <div style="font-size:11px; font-weight:700; color:${statusColor}; text-align:right;">● ${d.status}</div>
         </div>
       `);
     });
