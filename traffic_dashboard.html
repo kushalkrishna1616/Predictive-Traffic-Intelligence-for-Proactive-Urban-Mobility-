@@ -1097,20 +1097,88 @@ let mapInitialized = false;
   }
 
 
+    const BENGALURU_LOCATIONS = {
+    "banashankari": [12.9255, 77.5468, "Banashankari Junction, Bengaluru"],
+    "banshankari": [12.9255, 77.5468, "Banashankari Junction, Bengaluru"],
+    "richmond": [12.9657, 77.6042, "Richmond Circle, Bengaluru"],
+    "richmond circle": [12.9657, 77.6042, "Richmond Circle, Bengaluru"],
+    "silk board": [12.9172, 77.6228, "Silk Board Junction, Bengaluru"],
+    "silkboard": [12.9172, 77.6228, "Silk Board Junction, Bengaluru"],
+    "indiranagar": [12.9710, 77.6410, "Indiranagar 100ft Road, Bengaluru"],
+    "koramangala": [12.9352, 77.6245, "Koramangala Sony World, Bengaluru"],
+    "bellandur": [12.9280, 77.6760, "Bellandur Outer Ring Road, Bengaluru"],
+    "marathahalli": [12.9560, 77.7010, "Marathahalli Bridge, Bengaluru"],
+    "whitefield": [12.9860, 77.7340, "Whitefield ITPL, Bengaluru"],
+    "itpl": [12.9860, 77.7340, "Whitefield ITPL, Bengaluru"],
+    "hebbal": [13.0350, 77.5970, "Hebbal Flyover, Bengaluru"],
+    "mg road": [12.9750, 77.6080, "MG Road Signal, Bengaluru"],
+    "yeshwanthpur": [13.0280, 77.5410, "Yeshwanthpur Circle, Bengaluru"],
+    "tin factory": [13.0030, 77.6700, "Tin Factory KR Puram, Bengaluru"],
+    "kr puram": [13.0030, 77.6700, "Tin Factory KR Puram, Bengaluru"],
+    "electronic city": [12.8452, 77.6602, "Electronic City Elevated Toll, Bengaluru"],
+    "hsr": [12.9116, 77.6389, "HSR Layout Sector 1, Bengaluru"],
+    "hsr layout": [12.9116, 77.6389, "HSR Layout Sector 1, Bengaluru"],
+    "jayanagar": [12.9300, 77.5830, "Jayanagar 4th Block, Bengaluru"],
+    "jp nagar": [12.9080, 77.5850, "JP Nagar, Bengaluru"],
+    "btm": [12.9160, 77.6100, "BTM Layout, Bengaluru"],
+    "btm layout": [12.9160, 77.6100, "BTM Layout, Bengaluru"],
+    "domlur": [12.9610, 77.6380, "Domlur Flyover, Bengaluru"],
+    "chikkal": [12.9150, 77.5450, "Chikkalsandra Circle, Bengaluru"],
+    "chikkalsandra": [12.9150, 77.5450, "Chikkalsandra Circle, Bengaluru"],
+    "chikkalasandra": [12.9150, 77.5450, "Chikkalsandra Circle, Bengaluru"],
+    "dairy circle": [12.9380, 77.5980, "Dairy Circle Junction, Bengaluru"],
+    "majestic": [12.9767, 77.5713, "Majestic Bus Station, Bengaluru"],
+    "kengeri": [12.9080, 77.4850, "Kengeri Satellite Town, Bengaluru"],
+    "yelahanka": [13.1000, 77.5960, "Yelahanka Bypass, Bengaluru"],
+    "malleshwaram": [13.0030, 77.5690, "Malleshwaram 8th Cross, Bengaluru"],
+    "rajajinagar": [12.9900, 77.5530, "Rajajinagar 1st Block, Bengaluru"],
+    "sarjapur": [12.8600, 77.7800, "Sarjapur Road, Bengaluru"],
+    "bannerghatta": [12.8800, 77.5900, "Bannerghatta Road, Bengaluru"]
+  };
+
   async function geocodeLocation(query, fallbackLat, fallbackLng, defaultName) {
-    if (!query || query.trim() === "") return [fallbackLat, fallbackLng, defaultName];
+    if (!query) return [fallbackLat, fallbackLng, defaultName];
+    
+    // 1. Instant dictionary match for Bengaluru
+    const qLower = query.toLowerCase().replace(/,/g, ' ').replace(/-/g, ' ');
+    for (const [key, val] of Object.entries(BENGALURU_LOCATIONS)) {
+      if (qLower.includes(key)) {
+        return [val[0], val[1], val[2]];
+      }
+    }
+
+    // 2. Try backend geocode proxy with Bengaluru prioritization
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) {
-          const name = data[0].display_name.split(',')[0];
-          return [parseFloat(data[0].lat), parseFloat(data[0].lon), name];
+      const searchQ = (query.toLowerCase().includes('bengaluru') || query.toLowerCase().includes('bangalore')) ? query : `${query}, Bengaluru, Karnataka`;
+      const bRes = await fetch(`/api/osm/geocode?q=${encodeURIComponent(searchQ)}`);
+      if (bRes.ok) {
+        const bData = await bRes.json();
+        if (bData && bData.lat && bData.lng) {
+          return [parseFloat(bData.lat), parseFloat(bData.lng), bData.name || defaultName];
         }
       }
-    } catch(e) {
-      console.log("Geocoding fallback for:", query);
+    } catch(e) {}
+
+    // 3. Direct frontend Nominatim bounded to Bengaluru
+    const parts = query.split(',').map(s => s.trim()).filter(Boolean);
+    const attempts = [
+      `${parts[0]}, Bengaluru, Karnataka, India`,
+      `${parts[0]}, Karnataka, India`,
+      query
+    ];
+
+    for (const att of attempts) {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(att)}&viewbox=77.4,13.15,77.8,12.8&bounded=1&limit=1`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const name = data[0].display_name.split(',')[0];
+            return [parseFloat(data[0].lat), parseFloat(data[0].lon), name];
+          }
+        }
+      } catch(e) {}
     }
     return [fallbackLat, fallbackLng, defaultName];
   }
