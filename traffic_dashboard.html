@@ -711,27 +711,22 @@
       </div>
 
       <div class="glass">
-        <div class="panel-head"><div class="panel-title"><span class="eyebrow"></span>DYNAMIC AI ALTERNATE ROUTES</div></div>
-
-        <div class="route-card best" onclick="fetchRouteOptimization()">
-          <div class="ring-wrap">
-            <svg viewBox="0 0 52 52" width="52" height="52"><circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/><circle cx="26" cy="26" r="21" fill="none" stroke="#34D399" stroke-width="5" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="74" transform="rotate(-90 26 26)"/></svg>
-            <div class="ring-val" style="color:#34D399;">44%</div>
-          </div>
-          <div class="route-body">
-            <div class="route-card-top"><span class="route-name">Via HSR 27th Main & Agara Flyover</span><span class="best-tag">AI Recommended</span></div>
-            <div class="route-stats"><span><b>34 min</b> ETA (Saved 24m)</span><span><b>12.4 km</b></span></div>
-          </div>
+        <div class="panel-head">
+          <div class="panel-title"><span class="eyebrow"></span>DYNAMIC AI ALTERNATE ROUTES</div>
+          <div class="panel-meta" id="altRoutesMeta">COMPUTING OPTIMAL CORRIDORS</div>
         </div>
 
-        <div class="route-card">
-          <div class="ring-wrap">
-            <svg viewBox="0 0 52 52" width="52" height="52"><circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/><circle cx="26" cy="26" r="21" fill="none" stroke="#FB6169" stroke-width="5" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="15" transform="rotate(-90 26 26)"/></svg>
-            <div class="ring-val" style="color:#FB6169;">91%</div>
-          </div>
-          <div class="route-body">
-            <div class="route-card-top"><span class="route-name">Direct Outer Ring Road — Standard</span></div>
-            <div class="route-stats"><span><b>58 min</b> ETA</span><span><b>11.2 km</b></span></div>
+        <div id="dynamicAlternateRoutesList" style="display:flex; flex-direction:column; gap:10px;">
+          <!-- Dynamic alternate route cards rendered here -->
+          <div class="route-card best">
+            <div class="ring-wrap">
+              <svg viewBox="0 0 52 52" width="52" height="52"><circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/><circle cx="26" cy="26" r="21" fill="none" stroke="#34D399" stroke-width="5" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="74" transform="rotate(-90 26 26)"/></svg>
+              <div class="ring-val" style="color:#34D399;">32%</div>
+            </div>
+            <div class="route-body">
+              <div class="route-card-top"><span class="route-name">⭐ OPTIMAL ROUTE — Direct Arterial</span><span class="best-tag">AI Recommended</span></div>
+              <div class="route-stats"><span><b>18 min</b> ETA (Saved 12m)</span><span><b>7.8 km</b></span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1260,6 +1255,7 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
       modal.style.display = 'flex';
       updateDashboardForRoute(activeRoute, oName, dName);
     renderModalRouteCards();
+    renderAlternateRoutesPanel(oName, dName, oLat, oLng, dLat, dLng);
     }
   }
 
@@ -1561,6 +1557,58 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
 
     updateDashboardForRoute(activeRoute, oName, dName);
     renderModalRouteCards();
+    renderAlternateRoutesPanel(oName, dName, oLat, oLng, dLat, dLng);
+  }
+
+    function renderAlternateRoutesPanel(oName, dName, oLat, oLng, dLat, dLng) {
+    const listEl = document.getElementById('dynamicAlternateRoutesList');
+    const metaEl = document.getElementById('altRoutesMeta');
+    if (!listEl || !allAvailableRoutes || allAvailableRoutes.length === 0) return;
+
+    if (metaEl) metaEl.textContent = `${allAvailableRoutes.length} CORRIDORS ANALYZED`;
+
+    listEl.innerHTML = allAvailableRoutes.map((rt, idx) => {
+      const isSel = idx === activeRouteIndex;
+      const isOptimal = idx === 0;
+      const ringCol = isOptimal ? '#34D399' : (idx === 1 ? '#FFB547' : '#FB6169');
+      const congPct = isOptimal ? 32 : (idx === 1 ? 58 : 89);
+      const dashOffset = Math.round(132 - (132 * (congPct / 100)));
+      
+      const badgeHtml = isOptimal 
+        ? `<span class="best-tag" style="background:rgba(52,211,153,0.15); color:#34D399; border:1px solid rgba(52,211,153,0.3); font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;">⭐ AI Recommended</span>`
+        : (idx === 1 
+          ? `<span style="background:rgba(255,181,71,0.15); color:#FFB547; border:1px solid rgba(255,181,71,0.3); font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px;">⚡ Arterial Loop</span>`
+          : `<span style="background:rgba(251,97,105,0.15); color:#FB6169; border:1px solid rgba(251,97,105,0.3); font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px;">⚠️ Bottleneck +${rt.delayMin}</span>`);
+
+      const savedHtml = isOptimal 
+        ? `(Saved ${Math.round(rt.durationMin * 0.4)}m)` 
+        : `(+${rt.delayMin || '5m'})`;
+
+      const cardBorder = isSel ? `border: 2px solid ${rt.color}; background: rgba(56,189,248,0.12); box-shadow: 0 0 14px rgba(56,189,248,0.25);` : 'border: 1px solid rgba(255,255,255,0.08);';
+
+      return `
+        <div class="route-card ${isOptimal ? 'best' : ''}" onclick="renderMultiRoutesOnMap(${idx}, ${oLat}, ${oLng}, ${dLat}, ${dLng}, '${oName}', '${dName}')" 
+          style="cursor:pointer; padding:12px; border-radius:10px; transition:all 0.2s; ${cardBorder}">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 52 52" width="52" height="52">
+              <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>
+              <circle cx="26" cy="26" r="21" fill="none" stroke="${ringCol}" stroke-width="5" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="${dashOffset}" transform="rotate(-90 26 26)"/>
+            </svg>
+            <div class="ring-val" style="color:${ringCol}; font-size:11px; font-weight:800;">${congPct}%</div>
+          </div>
+          <div class="route-body">
+            <div class="route-card-top" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span class="route-name" style="font-weight:700; font-size:12.5px; color:${isSel ? '#FFF' : '#E2E8F0'};">${rt.name.split('(')[0]}</span>
+              ${badgeHtml}
+            </div>
+            <div class="route-stats" style="display:flex; justify-content:space-between; font-size:11px; color:#94A3B8;">
+              <span><b>${rt.durationMin} min</b> ETA <span style="color:${isOptimal ? '#34D399' : '#F59E0B'}">${savedHtml}</span></span>
+              <span><b>${rt.distKm} km</b> · <span style="font-weight:700; color:${ringCol}">${rt.speedAvg}</span></span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   function renderModalRouteCards() {
