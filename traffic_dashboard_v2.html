@@ -284,6 +284,21 @@
   .route-stats b{ color:var(--text); font-weight:600; }
 
   .footer-note{ text-align:center; color:var(--text-faint); font-size:11px; margin-top:6px; font-family:var(--font-mono); letter-spacing:0.3px; }
+
+  /* Autocomplete Dropdown */
+  .autocomplete-dropdown {
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+    background: #0D111C; border: 1px solid var(--border-hi); border-radius: 12px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.7); z-index: 99999; display: none;
+    max-height: 220px; overflow-y: auto; backdrop-filter: blur(16px);
+  }
+  .autocomplete-item {
+    padding: 10px 14px; font-size: 12.5px; font-family: var(--font-body);
+    color: var(--text); cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex; align-items: center; gap: 8px; transition: background 0.15s;
+  }
+  .autocomplete-item:hover { background: rgba(56,189,248,0.15); color: var(--cyan); }
+  .autocomplete-item:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -426,14 +441,16 @@
     </div>
 
     <!-- Command search & Dataset Selector -->
-    <div class="glass command-bar">
-      <div class="cmd-field origin">
+    <div class="glass command-bar" style="position:relative; z-index:9999;">
+      <div class="cmd-field origin" style="position:relative;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4DD6FF" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
-        <input type="text" id="originInput" value="Silk Board Junction, Bengaluru" placeholder="Origin...">
+        <input type="text" id="originInput" value="Silk Board Junction, Bengaluru" placeholder="Origin..." autocomplete="off">
+        <div class="autocomplete-dropdown" id="originDropdown"></div>
       </div>
-      <div class="cmd-field">
+      <div class="cmd-field" style="position:relative;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFB547" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-        <input type="text" id="destInput" value="Indiranagar 100ft Road, Bengaluru" placeholder="Enter your destination...">
+        <input type="text" id="destInput" value="Indiranagar 100ft Road, Bengaluru" placeholder="Enter your destination..." autocomplete="off">
+        <div class="autocomplete-dropdown" id="destDropdown"></div>
       </div>
 
       <select class="dataset-select" id="datasetSelect" onchange="switchDataset(this.value)">
@@ -1168,6 +1185,106 @@
       noteEl.innerHTML = `🗺️ <b>OpenStreetMap Real Driving Route Found</b>: <b>${oName} → ${dName}</b> | Total Distance: <b>${distKm} km</b> | Drive Time: <b>${durationMin} mins</b>.`;
     }
   }
+
+  // Live Autocomplete Suggestions Logic
+  const POPULAR_LOCATIONS = [
+    "Silk Board Junction, Bengaluru",
+    "Indiranagar 100ft Road, Bengaluru",
+    "Chikkalsandra, Bengaluru",
+    "Bellandur Outer Ring Road, Bengaluru",
+    "Tin Factory, KR Puram, Bengaluru",
+    "Hebbal Flyover Junction, Bengaluru",
+    "MG Road Signal, Bengaluru",
+    "Koramangala Sony World Signal, Bengaluru",
+    "HSR Layout 27th Main, Bengaluru",
+    "Agara Lake Junction, Bengaluru",
+    "Whitefield ITPL Main Road, Bengaluru",
+    "Marathahalli Bridge, Bengaluru",
+    "Electronic City Toll, Bengaluru",
+    "Yeshwanthpur Circle, Bengaluru",
+    "VIT Vellore, Tamil Nadu",
+    "Delhi, India",
+    "Mumbai, Maharashtra, India",
+    "Chennai, Tamil Nadu, India",
+    "Hyderabad, Telangana, India"
+  ];
+
+  function setupAutocomplete(inputId, dropdownId) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    if (!input || !dropdown) return;
+
+    let debounceTimer = null;
+
+    input.addEventListener('input', function() {
+      const q = input.value.trim().toLowerCase();
+      clearTimeout(debounceTimer);
+
+      if (q.length < 2) {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+        return;
+      }
+
+      // 1. Instant local matching
+      const localMatches = POPULAR_LOCATIONS.filter(loc => loc.toLowerCase().includes(q));
+
+      // Display local matches immediately
+      renderDropdownItems(localMatches, input, dropdown);
+
+      // 2. Fetch live OpenStreetMap Nominatim suggestions for deeper matching
+      debounceTimer = setTimeout(async () => {
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.length > 0) {
+              const apiNames = data.map(item => item.display_name);
+              const combined = Array.from(new Set([...localMatches, ...apiNames])).slice(0, 7);
+              renderDropdownItems(combined, input, dropdown);
+            }
+          }
+        } catch(e) {
+          console.log("Autocomplete API error:", e);
+        }
+      }, 250);
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+  }
+
+  function renderDropdownItems(items, input, dropdown) {
+    if (!items || items.length === 0) {
+      dropdown.style.display = 'none';
+      dropdown.innerHTML = '';
+      return;
+    }
+    dropdown.innerHTML = items.map(item => `
+      <div class="autocomplete-item" onclick="selectAutocomplete('${input.id}', '${dropdown.id}', '${item.replace(/'/g, "\\'")}')">
+        📍 ${item}
+      </div>
+    `).join('');
+    dropdown.style.display = 'block';
+  }
+
+  function selectAutocomplete(inputId, dropdownId, text) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    if (input) input.value = text;
+    if (dropdown) {
+      dropdown.style.display = 'none';
+      dropdown.innerHTML = '';
+    }
+    fetchRouteOptimization();
+  }
+
+  setupAutocomplete('originInput', 'originDropdown');
+  setupAutocomplete('destInput', 'destDropdown');
 </script>
 </body>
 </html>
