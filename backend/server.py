@@ -16,12 +16,16 @@ import iot_simulator
 import predictor
 import route_optimizer
 import cctv_video_processor
+import scenario_simulator
 
 pipe = bmd45_pipeline.BMD45Pipeline()
 sim = iot_simulator.IoTSimulator()
 pred = predictor.TrafficPredictor()
 opt = route_optimizer.RouteOptimizer()
 video_proc = cctv_video_processor.CCTVVideoProcessor()
+scenario = scenario_simulator.ScenarioSimulator()
+
+current_simulation_state = scenario.simulate_scenario()
 
 HTML_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "traffic_dashboard.html")
 
@@ -137,11 +141,6 @@ class TrafficAPIHandler(BaseHTTPRequestHandler):
             return
 
         # Serve API endpoints
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self._send_cors_headers()
-        self.end_headers()
-
         response = {}
 
         if path == "/api" or path == "/api/info":
@@ -149,7 +148,7 @@ class TrafficAPIHandler(BaseHTTPRequestHandler):
                 "status": "ONLINE",
                 "server": "OpenCV CCTV Video Processing Server",
                 "system": "Traffic Congestion AI Engine (AI/ML-09)",
-                "endpoints": ["/api/video/feed", "/api/video/telemetry", "/api/traffic/live", "/api/traffic/predict", "/api/route/optimize"]
+                "endpoints": ["/api/video/feed", "/api/video/telemetry", "/api/traffic/live", "/api/traffic/predict", "/api/route/optimize", "/api/simulation/current", "/api/datasets/available"]
             }
         elif path == "/api/traffic/live":
             # Direct calculation from OpenCV CCTV Video Processing Pipeline!
@@ -178,13 +177,61 @@ class TrafficAPIHandler(BaseHTTPRequestHandler):
         elif path == "/api/route/optimize":
             route_id = query.get("route_id", [None])[0]
             response = opt.calculate_optimized_route(route_id)
-        else:
-            response = {"error": "Endpoint not found", "path": path}
-
-        self.wfile.write(json.dumps(response, indent=2).encode('utf-8'))
+        elif path == "/api/simulation/current":
+            response = current_simulation_state
+        elif path == "/api/traffic/explain":
+            response = {
+                "corridor": "Silk Board Junction",
+                "xai_breakdown": current_simulation_state.get("xai_breakdown", [])
+            }
+        elif path == "/api/incidents/active":
+            response = {
+                "active_incidents_count": current_simulation_state.get("summary", {}).get("active_incidents_count", 0),
+                "incidents": current_simulation_state.get("incidents", [])
+            }
+        elif path == "/api/datasets/available":
+            response = {
+                "datasets": [
+                    {"id": "bmd45", "name": "IISc BMD-45 Bengaluru Mobility Vision Dataset", "type": "Real-world CCTV 14-Vehicle Classes", "status": "ACTIVE"},
+                    {"id": "metr_la", "name": "METR-LA Highway Traffic Sensor Time-Series", "type": "Loop Detector Speed Telemetry", "status": "READY"},
+                    {"id": "ua_detrac", "name": "UA-DETRAC Real Traffic Video Dataset", "type": "CCTV Bounding Boxes & Optical Tracking", "status": "READY"},
+                    {"id": "bengaluru_graph", "name": "Bengaluru Arterial OpenStreetMap Graph", "type": "Geospatial Road Network", "status": "ACTIVE"}
+                ]
+            }
+        json_bytes = json.dumps(response, indent=2).encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(json_bytes)))
+        self._send_cors_headers()
+        self.end_headers()
+        self.wfile.write(json_bytes)
 
     def do_POST(self):
         parsed = urlparse(self.path)
+
+        if parsed.path == "/api/simulation/apply":
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
+            try:
+                body = json.loads(post_data.decode('utf-8'))
+            except Exception:
+                body = {}
+
+            vol_mult = float(body.get("volume_multiplier", 1.0))
+            rain = bool(body.get("rain_active", False))
+            accident = body.get("accident_corridor", None)
+            closure = bool(body.get("lane_closure_active", False))
+
+            global current_simulation_state
+            current_simulation_state = scenario.simulate_scenario(vol_mult, rain, accident, closure)
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self._send_cors_headers()
+            self.end_headers()
+            self.wfile.write(json.dumps(current_simulation_state, indent=2).encode('utf-8'))
+            return
+
         if parsed.path == "/api/emergency/greenwave":
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'

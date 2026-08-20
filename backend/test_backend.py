@@ -29,6 +29,13 @@ try:
     print(f"[SUCCESS] Route Optimizer: {route['origin']} -> {route['destination']}")
     print(f"          Time Saved: {route['ai_optimized_route']['time_saved_min']} mins")
 
+    import scenario_simulator
+
+    scen = scenario_simulator.ScenarioSimulator()
+    sim_res = scen.simulate_scenario(volume_multiplier=1.3, rain_active=True, accident_corridor="Silk Board Junction")
+    print(f"[SUCCESS] Scenario Simulator: Avg Congestion {sim_res['summary']['avg_congestion_pct']}%, Active Incidents: {sim_res['summary']['active_incidents_count']}")
+    print(f"          XAI Breakdown Factors: {len(sim_res['xai_breakdown'])}, CO2 Saved: {sim_res['summary']['co2_saved_kg']} kg")
+
     print("\n--- ALL BACKEND MODULE VERIFICATIONS PASSED ---")
 
 except Exception as e:

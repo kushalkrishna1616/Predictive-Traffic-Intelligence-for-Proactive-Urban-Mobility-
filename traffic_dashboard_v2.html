@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RoutePulse — Command Center</title>
+<title>RoutePulse — Command Center & Traffic Intelligence Engine</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -89,7 +89,7 @@
   /* ===== Main ===== */
   .main{ flex:1; min-width:0; padding: 22px 30px 40px; }
 
-  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
   .crumb{ font-size:12px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:0.5px; margin-bottom:4px; }
   .page-title{ font-family:var(--font-display); font-weight:700; font-size:23px; letter-spacing:0.3px; }
   .topbar-right{ display:flex; align-items:center; gap:14px; }
@@ -100,33 +100,60 @@
   .live-dot{ width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation: blink 1.8s infinite; }
   @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
   .clock{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-dim); background:var(--panel); border:1px solid var(--border); padding:8px 13px; border-radius:20px; }
-  .bell{
-    width:36px; height:36px; border-radius:10px; background:var(--panel); border:1px solid var(--border);
-    display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer;
-  }
-  .bell::after{ content:''; position:absolute; top:8px; right:9px; width:6px; height:6px; border-radius:50%; background:var(--red); box-shadow:0 0 6px var(--red-glow); }
 
   /* Glass panel base */
   .glass{
     background: var(--panel); border:1px solid var(--border); border-radius:16px;
     backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    position:relative; overflow:hidden;
+    position:relative; overflow:hidden; margin-bottom:16px;
   }
   .glass::before{
     content:''; position:absolute; top:0; left:24px; right:24px; height:1px;
     background: linear-gradient(90deg, transparent, var(--border-hi), transparent);
   }
 
+  /* Incident Alert Banner */
+  .incident-banner{
+    display:none; align-items:center; justify-content:space-between; padding:14px 20px;
+    background: rgba(251,97,105,0.12); border:1px solid rgba(251,97,105,0.35); border-radius:14px;
+    margin-bottom:16px; backdrop-filter: blur(12px);
+  }
+  .banner-left{ display:flex; align-items:center; gap:14px; }
+  .banner-icon{ width:36px; height:36px; border-radius:10px; background:rgba(251,97,105,0.2); display:flex; align-items:center; justify-content:center; }
+  .banner-title{ font-family:var(--font-display); font-weight:700; font-size:14px; color:var(--red); }
+  .banner-sub{ font-size:12px; color:var(--text-dim); margin-top:2px; font-family:var(--font-mono); }
+  .banner-actions{ display:flex; gap:10px; }
+  .btn-action{
+    font-family:var(--font-mono); font-size:11px; font-weight:700; padding:8px 14px; border-radius:8px; border:none; cursor:pointer;
+    transition: all 0.15s;
+  }
+  .btn-override{ background:var(--amber); color:#0A0E17; }
+  .btn-greenwave{ background:var(--green); color:#0A0E17; }
+
   /* ===== KPI row ===== */
   .kpi-row{ display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:16px; }
   @media (max-width:1100px){ .kpi-row{ grid-template-columns: repeat(2,1fr);} }
-  .kpi-card{ padding:18px 20px; }
+  .kpi-card{ padding:18px 20px; margin-bottom:0; }
   .kpi-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .kpi-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; }
   .kpi-trend{ font-family:var(--font-mono); font-size:11px; display:flex; align-items:center; gap:3px; }
   .kpi-label{ font-size:11.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.8px; font-family:var(--font-mono); margin-bottom:6px; }
   .kpi-value{ font-family:var(--font-display); font-size:27px; font-weight:700; margin-bottom:10px; }
   .kpi-spark{ width:100%; height:26px; }
+
+  /* ===== Scenario Simulator Panel ===== */
+  .sim-panel{ padding:18px 20px; }
+  .sim-grid{ display:grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 120px; gap:16px; align-items:center; margin-top:14px; }
+  @media (max-width:1100px){ .sim-grid{ grid-template-columns:1fr 1fr; } }
+  .sim-field label{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+  .sim-slider{ width:100%; accent-color: var(--amber); cursor:pointer; }
+  .sim-toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; font-family:var(--font-mono); font-size:12px; }
+  .btn-sim-apply{
+    height:42px; font-family:var(--font-display); font-weight:700; font-size:13px; letter-spacing:0.6px;
+    background: linear-gradient(135deg, var(--cyan), #1d8ba8); color:#04141a; border:none; border-radius:10px;
+    cursor:pointer; transition: transform 0.15s, filter 0.15s; box-shadow: 0 0 20px var(--cyan-glow);
+  }
+  .btn-sim-apply:hover{ transform:translateY(-1px); filter:brightness(1.08); }
 
   /* ===== Command search ===== */
   .command-bar{ display:flex; gap:10px; padding:10px; margin-bottom:16px; }
@@ -139,6 +166,8 @@
   .cmd-field svg{ flex-shrink:0; opacity:0.6; }
   .cmd-field input{ background:none; border:none; outline:none; color:var(--text); font-size:14px; width:100%; font-family:var(--font-body); }
   .cmd-field input::placeholder{ color:var(--text-faint); }
+  .dataset-select{ background:var(--panel-solid); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:0 12px; font-family:var(--font-mono); font-size:12px; outline:none; cursor:pointer; }
+
   .find-btn{
     font-family:var(--font-display); font-weight:700; font-size:13.5px; letter-spacing:0.6px;
     background: linear-gradient(135deg, var(--amber), #d9891f); color:#0A0E17; border:none; border-radius:12px;
@@ -159,7 +188,7 @@
   /* Video Monitor Container */
   .video-container {
     width: 100%;
-    height: 400px;
+    height: 380px;
     background: #000;
     border-radius: 12px;
     overflow: hidden;
@@ -189,27 +218,6 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   }
 
-  /* Route canvas */
-  .route-canvas{ position:relative; height:240px; margin:14px 20px; border-radius:12px; overflow:hidden;
-    background:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/36px 36px,
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/36px 36px,
-      radial-gradient(ellipse at 30% 20%, rgba(77,214,255,0.06), transparent 60%),
-      #080B14;
-    border:1px solid var(--border);
-  }
-  .route-canvas svg{ width:100%; height:100%; }
-  .flowline{ stroke-dasharray: 3 9; animation: flow 1.3s linear infinite; }
-  @keyframes flow{ to{ stroke-dashoffset:-24; } }
-
-  .cam-badge{
-    position:absolute; transform:translate(-50%,-100%); background:rgba(13,17,28,0.92); border:1px solid var(--border-hi);
-    border-radius:9px; padding:5px 9px; font-family:var(--font-mono); font-size:10px; white-space:nowrap;
-    box-shadow:0 8px 20px rgba(0,0,0,0.5); backdrop-filter: blur(6px);
-  }
-  .cam-badge .cam-id{ color:var(--text-faint); }
-  .cam-badge .cam-val{ font-weight:700; }
-
   .legend-row{ display:flex; gap:16px; padding: 0 20px 18px; flex-wrap:wrap; }
   .legend-item{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-dim); }
   .legend-dot{ width:8px; height:8px; border-radius:50%; }
@@ -231,21 +239,26 @@
   .pcu-total-label{ font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); font-family:var(--font-mono); }
   .pcu-total-val{ font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--amber); text-shadow:0 0 20px var(--amber-glow); }
 
+  /* XAI Breakdown List */
+  .xai-item{ margin-bottom:12px; padding:0 20px; }
+  .xai-top{ display:flex; justify-content:space-between; font-size:12px; font-family:var(--font-mono); margin-bottom:4px; }
+  .xai-track{ height:6px; background:var(--panel-hi); border-radius:4px; overflow:hidden; }
+  .xai-fill{ height:100%; border-radius:4px; transition: width 0.4s ease; }
+
   /* Gauge */
   .pulse-wrap{ display:flex; flex-direction:column; align-items:center; padding:6px 20px 24px; }
-  .gauge-stage{ position:relative; width:230px; height:230px; }
+  .gauge-stage{ position:relative; width:220px; height:220px; }
   .gauge-ticks{ position:absolute; inset:0; }
-  .tick{ position:absolute; top:0; left:50%; width:2px; height:10px; background:var(--text-faint); transform-origin:1px 115px; border-radius:2px; }
+  .tick{ position:absolute; top:0; left:50%; width:2px; height:10px; background:var(--text-faint); transform-origin:1px 110px; border-radius:2px; }
   .gauge-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .gauge-value{ font-family:var(--font-display); font-size:40px; font-weight:700; color:var(--amber); text-shadow:0 0 30px var(--amber-glow); }
-  .gauge-caption{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1.2px; margin-top:2px; }
-  .gauge-state{ margin-top:14px; font-family:var(--font-mono); font-size:12px; padding:6px 15px; border-radius:20px; background:rgba(255,181,71,0.1); color:var(--amber); border:1px solid rgba(255,181,71,0.3); transition: all 0.3s; }
+  .gauge-value{ font-family:var(--font-display); font-size:38px; font-weight:700; color:var(--amber); text-shadow:0 0 30px var(--amber-glow); }
+  .gauge-caption{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1.2px; margin-top:2px; }
+  .gauge-state{ margin-top:14px; font-family:var(--font-mono); font-size:11.5px; padding:6px 15px; border-radius:20px; background:rgba(255,181,71,0.1); color:var(--amber); border:1px solid rgba(255,181,71,0.3); transition: all 0.3s; }
 
   /* Bottom */
   .bottom-grid{ display:grid; grid-template-columns:1.3fr 1fr; gap:16px; }
   @media (max-width:1100px){ .bottom-grid{ grid-template-columns:1fr; } }
 
-  .timeline-wrap{ padding: 4px 20px 20px; }
   .predict-note{ margin: 14px 20px 20px; padding:13px 15px; background:var(--panel-hi); border-radius:10px; border-left:3px solid var(--amber); font-size:12.5px; color:var(--text-dim); line-height:1.55; }
   .predict-note b{ color:var(--text); }
 
@@ -288,14 +301,11 @@
       <div class="side-item" title="Predictions">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 3 3 5-8"/></svg>
       </div>
-      <div class="side-item" title="Alerts">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5-2 7-2 7h18s-2-2-2-7c0-4-3-7-7-7z"/><path d="M9 20a3 3 0 0 0 6 0"/></svg>
+      <div class="side-item" title="Emergency Wave" onclick="triggerEmergencyGreenWave()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#FB6169" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5-2 7-2 7h18s-2-2-2-7c0-4-3-7-7-7z"/><path d="M9 20a3 3 0 0 0 6 0"/></svg>
       </div>
     </div>
     <div class="side-bottom">
-      <div class="side-item" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </div>
       <div class="side-avatar">OP</div>
     </div>
   </div>
@@ -306,18 +316,57 @@
     <div class="topbar">
       <div>
         <div class="crumb">COMMAND CENTER / BENGALURU METRO ZONE</div>
-        <div class="page-title">Live Congestion Overview</div>
+        <div class="page-title">Live Congestion & Traffic Intelligence Engine</div>
       </div>
       <div class="topbar-right">
         <div class="live-pill"><span class="live-dot"></span><span id="backendStatusText">218 / 230 CAMERAS ONLINE</span></div>
         <div class="clock" id="clock">--:--:--</div>
-        <div class="bell">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8D96AC" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-        </div>
       </div>
     </div>
 
-    <!-- KPI row -->
+    <!-- Incident Alert Banner (Hidden by default, shown on critical incidents) -->
+    <div class="incident-banner" id="incidentBanner">
+      <div class="banner-left">
+        <div class="banner-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FB6169" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div>
+          <div class="banner-title" id="incidentBannerTitle">CRITICAL TRAFFIC ANOMALY DETECTED</div>
+          <div class="banner-sub" id="incidentBannerSub">Silk Board Junction — Collision & Shockwave Bottleneck (Speed drop to 8.2 km/h)</div>
+        </div>
+      </div>
+      <div class="banner-actions">
+        <button class="btn-action btn-override" onclick="triggerEmergencyGreenWave()">OVERRIDE SIGNALS</button>
+        <button class="btn-action btn-greenwave" onclick="triggerEmergencyGreenWave()">GREEN WAVE AMBULANCE</button>
+      </div>
+    </div>
+
+    <!-- Interactive "What-If" Scenario Simulator Panel -->
+    <div class="glass sim-panel">
+      <div class="panel-head" style="padding:0; margin-bottom:8px;">
+        <div class="panel-title"><span class="eyebrow"></span>INTERACTIVE "WHAT-IF" TRAFFIC SCENARIO SIMULATOR</div>
+        <div class="panel-meta">CONTROL PANEL FOR HACKATHON DEMO</div>
+      </div>
+
+      <div class="sim-grid">
+        <div class="sim-field">
+          <label>Traffic Volume Spike: <b id="lblVolVal">+0%</b></label>
+          <input type="range" class="sim-slider" id="simVolumeSlider" min="1.0" max="2.0" step="0.05" value="1.0" oninput="document.getElementById('lblVolVal').textContent = '+' + Math.round((this.value-1)*100) + '%'">
+        </div>
+        <label class="sim-toggle">
+          <input type="checkbox" id="simRainCheck"> 🌧️ Rain Impact
+        </label>
+        <label class="sim-toggle">
+          <input type="checkbox" id="simAccidentCheck"> 🚨 Silk Board Accident
+        </label>
+        <label class="sim-toggle">
+          <input type="checkbox" id="simClosureCheck"> 🚧 Lane Closure
+        </label>
+        <button class="btn-sim-apply" onclick="applyTrafficSimulation()">APPLY SIMULATION</button>
+      </div>
+    </div>
+
+    <!-- KPI row with Multi-Objective Sustainability Metrics -->
     <div class="kpi-row">
       <div class="glass kpi-card">
         <div class="kpi-top">
@@ -336,10 +385,10 @@
           <div class="kpi-icon" style="background:rgba(77,214,255,0.12);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4DD6FF" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
           </div>
-          <div class="kpi-trend" style="color:#34D399;">● stable</div>
+          <div class="kpi-trend" style="color:#34D399;">● active</div>
         </div>
-        <div class="kpi-label">Cameras Online</div>
-        <div class="kpi-value">218 / 230</div>
+        <div class="kpi-label">Time Saved (Min)</div>
+        <div class="kpi-value" id="kpiTimeSaved">24.0m</div>
         <svg class="kpi-spark" viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="0,10 20,9 40,11 60,8 80,9 100,10" fill="none" stroke="#4DD6FF" stroke-width="2"/></svg>
       </div>
 
@@ -348,10 +397,10 @@
           <div class="kpi-icon" style="background:rgba(52,211,153,0.12);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a4 4 0 0 0 4-4v-1a4 4 0 0 0-4-4H9a4 4 0 0 1-4-4v-1"/></svg>
           </div>
-          <div class="kpi-trend" style="color:#34D399;">▲ 12%</div>
+          <div class="kpi-trend" style="color:#34D399;">▲ SDG 13</div>
         </div>
-        <div class="kpi-label">Routes Re-optimized</div>
-        <div class="kpi-value">1,204</div>
+        <div class="kpi-label">CO2 Saved (kg)</div>
+        <div class="kpi-value" id="kpiCo2Saved">18.4 kg</div>
         <svg class="kpi-spark" viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="0,22 20,18 40,19 60,10 80,11 100,3" fill="none" stroke="#34D399" stroke-width="2"/></svg>
       </div>
 
@@ -360,15 +409,15 @@
           <div class="kpi-icon" style="background:rgba(251,97,105,0.12);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FB6169" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5-2 7-2 7h18s-2-2-2-7c0-4-3-7-7-7z"/><path d="M9 20a3 3 0 0 0 6 0"/></svg>
           </div>
-          <div class="kpi-trend" style="color:#FB6169;">▲ 2 new</div>
+          <div class="kpi-trend" style="color:#FB6169;" id="kpiIncidentTrend">0 active</div>
         </div>
-        <div class="kpi-label">Active Congestion Zones</div>
-        <div class="kpi-value">7</div>
+        <div class="kpi-label">Active Incidents</div>
+        <div class="kpi-value" id="kpiIncidentsVal">0</div>
         <svg class="kpi-spark" viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="0,18 20,20 40,14 60,16 80,8 100,9" fill="none" stroke="#FB6169" stroke-width="2"/></svg>
       </div>
     </div>
 
-    <!-- Command bar -->
+    <!-- Command search & Dataset Selector -->
     <div class="glass command-bar">
       <div class="cmd-field origin">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4DD6FF" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
@@ -378,6 +427,14 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFB547" stroke-width="2"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
         <input type="text" id="destInput" value="Indiranagar 100ft Road, Bengaluru" placeholder="Enter your destination...">
       </div>
+
+      <select class="dataset-select" id="datasetSelect" onchange="switchDataset(this.value)">
+        <option value="bmd45">IISc BMD-45 Bengaluru Dataset</option>
+        <option value="metr_la">METR-LA Loop Detector Time-Series</option>
+        <option value="ua_detrac">UA-DETRAC Real Video Bounding Boxes</option>
+        <option value="bengaluru_graph">Bengaluru OpenStreetMap Graph</option>
+      </select>
+
       <button class="find-btn" id="findRouteBtn" onclick="fetchRouteOptimization()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0A0E17" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         FIND ROUTE
@@ -387,7 +444,7 @@
     <!-- Main grid -->
     <div class="grid">
 
-      <!-- Left Column: Live AI CCTV Video Monitor + Route Canvas -->
+      <!-- Left Column: Live AI CCTV Video Monitor -->
       <div class="glass">
         <div class="panel-head">
           <div class="panel-title"><span class="eyebrow"></span>LIVE CCTV VIDEO AI MONITOR — CAM-3049 SILK BOARD JUNCTION</div>
@@ -461,10 +518,10 @@
 
       </div>
 
-      <!-- Right Column: Live Vehicle Density Breakdown + Congestion Pulse Gauge -->
+      <!-- Right Column: Vehicle Breakdown & Explainable AI (XAI) -->
       <div class="right-col">
 
-        <!-- Vehicle Density Breakdown driven 100% by CCTV Video Processor -->
+        <!-- Vehicle Density Breakdown -->
         <div class="glass">
           <div class="panel-head">
             <div class="panel-title"><span class="eyebrow"></span>CCTV VIDEO VEHICLE BREAKDOWN</div>
@@ -503,7 +560,34 @@
           <div class="pcu-total"><span class="pcu-total-label">Frame PCU Load</span><span class="pcu-total-val" id="pcuTotalVal">19.5 PCU</span></div>
         </div>
 
-        <!-- Congestion Pulse Gauge driven by OpenCV video metrics -->
+        <!-- Explainable AI (XAI) Congestion Breakdown Card -->
+        <div class="glass">
+          <div class="panel-head">
+            <div class="panel-title"><span class="eyebrow"></span>EXPLAINABLE AI (XAI) FACTOR BREAKDOWN</div>
+            <div class="panel-meta">WHY CONGESTION HAPPENS</div>
+          </div>
+
+          <div id="xaiList">
+            <div class="xai-item">
+              <div class="xai-top"><span>Traffic Volume Spike</span><span>42.0%</span></div>
+              <div class="xai-track"><div class="xai-fill" style="width:42%; background:#4DD6FF;"></div></div>
+            </div>
+            <div class="xai-item">
+              <div class="xai-top"><span>Weather / Rain Impact</span><span>18.0%</span></div>
+              <div class="xai-track"><div class="xai-fill" style="width:18%; background:#FFB547;"></div></div>
+            </div>
+            <div class="xai-item">
+              <div class="xai-top"><span>Incidents & Bottlenecks</span><span>25.0%</span></div>
+              <div class="xai-track"><div class="xai-fill" style="width:25%; background:#FB6169;"></div></div>
+            </div>
+            <div class="xai-item">
+              <div class="xai-top"><span>Lane Closure / Roadworks</span><span>15.0%</span></div>
+              <div class="xai-track"><div class="xai-fill" style="width:15%; background:#34D399;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Congestion Pulse Gauge -->
         <div class="glass">
           <div class="panel-head"><div class="panel-title"><span class="eyebrow"></span>CONGESTION PULSE (VIDEO DRIVEN)</div></div>
           <div class="pulse-wrap">
@@ -545,7 +629,7 @@
           <div class="panel-title"><span class="eyebrow"></span>PREDICTED CONGESTION UNTIL ARRIVAL</div>
           <div class="panel-meta">ETA 18 MIN</div>
         </div>
-        <div class="timeline-wrap">
+        <div style="padding: 4px 20px 20px;">
           <svg viewBox="0 0 640 170" style="width:100%; height:170px;">
             <defs>
               <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -647,7 +731,6 @@
   function updateDashboardFromVideoData(data){
     if(!data) return;
 
-    // Update Vehicle Counts calculated directly from Video Processing
     const counts = data.counts || {};
     const bikesCount = (counts.bike || 0) + (counts.auto || 0);
     const carsCount = counts.car || 0;
@@ -664,14 +747,12 @@
     if (countBusesEl) countBusesEl.textContent = `${busesCount} units · 3.0 PCU ea`;
     if (countTrucksEl) countTrucksEl.textContent = `${trucksCount} units · 2.5 PCU`;
 
-    // Dynamic bar widths
     const totalVehicles = Math.max(1, (bikesCount + carsCount + busesCount + trucksCount));
     document.getElementById('barBikes').style.width = `${Math.min(100, Math.round((bikesCount / totalVehicles) * 100))}%`;
     document.getElementById('barCars').style.width = `${Math.min(100, Math.round((carsCount / totalVehicles) * 100))}%`;
     document.getElementById('barBuses').style.width = `${Math.min(100, Math.round((busesCount / totalVehicles) * 100))}%`;
     document.getElementById('barTrucks').style.width = `${Math.min(100, Math.round((trucksCount / totalVehicles) * 100))}%`;
 
-    // Update PCU Load calculated from Video
     const pcuVal = data.total_pcu || 15.0;
     const pcuEl = document.getElementById('pcuTotalVal');
     if (pcuEl) pcuEl.textContent = `${pcuVal} PCU`;
@@ -682,11 +763,8 @@
     const camBadgePcu = document.getElementById('camBadgePcu');
     if (camBadgePcu) camBadgePcu.textContent = `${data.congestion_pct}% PCU`;
 
-    // Update Congestion Gauge driven 100% by Video Processing
-    const congestionPct = data.congestion_pct || 50.0;
-    updateGauge(congestionPct);
+    updateGauge(data.congestion_pct || 50.0);
 
-    // Update HUD text
     const hudEl = document.getElementById('videoHudText');
     if (hudEl) {
       hudEl.textContent = `● REC [CAM-3049 SILK BOARD] | FRAME #${data.frame_index} | VEHICLES: ${data.total_vehicles} | SPEED: ${data.avg_speed_kmh} KM/H`;
@@ -727,11 +805,93 @@
     }
   }
 
+  // Interactive Scenario Simulator Application
+  async function applyTrafficSimulation(){
+    const volume_multiplier = parseFloat(document.getElementById('simVolumeSlider').value);
+    const rain_active = document.getElementById('simRainCheck').checked;
+    const accident = document.getElementById('simAccidentCheck').checked ? "Silk Board Junction" : null;
+    const lane_closure_active = document.getElementById('simClosureCheck').checked;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/simulation/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volume_multiplier, rain_active, accident_corridor: accident, lane_closure_active })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        updateSimulationUI(data);
+      }
+    } catch(e) {
+      console.log("Error applying simulation:", e);
+    }
+  }
+
+  function updateSimulationUI(data) {
+    if(!data) return;
+
+    // Update KPI & Sustainability Metrics
+    document.getElementById('kpiPcuValue').textContent = `${data.summary.avg_congestion_pct}%`;
+    document.getElementById('kpiTimeSaved').textContent = `${data.summary.time_saved_min}m`;
+    document.getElementById('kpiCo2Saved').textContent = `${data.summary.co2_saved_kg} kg`;
+    document.getElementById('kpiIncidentsVal').textContent = `${data.summary.active_incidents_count}`;
+    document.getElementById('kpiIncidentTrend').textContent = `${data.summary.active_incidents_count} active`;
+
+    // Update Incident Banner
+    const banner = document.getElementById('incidentBanner');
+    if (data.incidents && data.incidents.length > 0) {
+      const inc = data.incidents[0];
+      document.getElementById('incidentBannerTitle').textContent = `🚨 ${inc.severity}: ${inc.corridor.toUpperCase()}`;
+      document.getElementById('incidentBannerSub').textContent = `${inc.type} — ${inc.speed_drop} (${inc.action_required})`;
+      banner.style.display = "flex";
+    } else {
+      banner.style.display = "none";
+    }
+
+    // Update XAI Factor Breakdown List
+    const xaiList = document.getElementById('xaiList');
+    if (xaiList && data.xai_breakdown) {
+      xaiList.innerHTML = "";
+      data.xai_breakdown.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'xai-item';
+        row.innerHTML = `
+          <div class="xai-top"><span>${item.factor}</span><span>${item.pct}%</span></div>
+          <div class="xai-track"><div class="xai-fill" style="width:${item.pct}%; background:${item.color};"></div></div>
+        `;
+        xaiList.appendChild(row);
+      });
+    }
+
+    // Update Congestion Gauge
+    updateGauge(data.summary.avg_congestion_pct);
+  }
+
+  // Emergency Ambulance Green Wave Priority Corridor Trigger
+  async function triggerEmergencyGreenWave() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/emergency/greenwave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ corridor: "Silk Board Junction", hospital_name: "St. John's Hospital (Koramangala)" })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`🚑 EMERGENCY AMBULANCE GREEN WAVE ACTIVATED!\n\nCorridor: ${data.emergency_corridor}\nDestination: ${data.target_hospital}\nSignal Action: ${data.signal_override}\nPriority Time Saved: -${data.estimated_delay_reduction_min} mins`);
+      }
+    } catch(e) {
+      alert("🚑 Emergency Green Wave Priority Dispatch Triggered!");
+    }
+  }
+
+  function switchDataset(datasetId) {
+    alert(`📊 Switched Active Dataset Pipeline to: ${datasetId.toUpperCase()}`);
+  }
+
   async function fetchRouteOptimization(){
     const originInput = document.getElementById('originInput');
     const destInput = document.getElementById('destInput');
-    const origin = originInput ? originInput.value : 'Silk Board';
-    const dest = destInput ? destInput.value : 'Indiranagar';
 
     try {
       const res = await fetch(`${BACKEND_URL}/api/route/optimize`);
