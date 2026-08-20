@@ -707,26 +707,33 @@
     }
   }
 
-  // Continuously refresh OpenCV CCTV Video Frame
-  function refreshCCTVFrame(){
-    const img = document.getElementById('cctvVideoFrame');
-    if(img){
-      img.src = `${BACKEND_URL}/api/video/frame?t=${Date.now()}`;
-    }
-  }
-
-  // Fetch CCTV Video Calculated Telemetry
-  async function fetchVideoTelemetry(){
+  let isPolling = false;
+  async function pollDashboardLoop(){
+    if(document.hidden || isPolling) return;
+    isPolling = true;
     try {
+      const img = document.getElementById('cctvVideoFrame');
+      if(img) img.src = `${BACKEND_URL}/api/video/frame?t=${Date.now()}`;
+      
       const res = await fetch(`${BACKEND_URL}/api/video/telemetry`);
       if (res.ok) {
         const data = await res.json();
         updateDashboardFromVideoData(data);
       }
     } catch(e) {
-      console.log("Error fetching CCTV video telemetry:", e);
+      console.log("Telemetry poll:", e);
+    } finally {
+      isPolling = false;
     }
   }
+
+  // Initial poll on load
+  pollDashboardLoop();
+  // Poll safely every 1.2s ONLY when tab is active
+  setInterval(pollDashboardLoop, 1200);
+</script>
+</body>
+</html>
 
   function updateDashboardFromVideoData(data){
     if(!data) return;
@@ -906,10 +913,6 @@
       console.log("Route calculation simulated.");
     }
   }
-
-  // Refresh CCTV video frames at smooth ~4 FPS for video stream effect
-  setInterval(refreshCCTVFrame, 250);
-  setInterval(fetchVideoTelemetry, 500);
 </script>
 </body>
 </html>

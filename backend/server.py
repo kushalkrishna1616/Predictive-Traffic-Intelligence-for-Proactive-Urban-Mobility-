@@ -1,15 +1,20 @@
 """
-Standalone Zero-Dependency HTTP API & UI Server for AI/ML-09 Traffic Congestion System.
-Runs OpenCV CCTV Video Processor Engine to calculate live vehicle counts, PCU density,
-and congestion levels frame-by-frame directly from Indian traffic video monitoring.
-Serves the RoutePulse HTML Dashboard directly at http://localhost:8000
+FastAPI & Uvicorn High-Performance Server
+Problem Statement: AI/ML-09 / AML-05 (Innohack Project)
+
+Asynchronous non-blocking web server powered by FastAPI & Uvicorn.
+Serves OpenCV CCTV live video frames, simulation engine, XAI breakdowns,
+and glassmorphic dashboard UI with zero socket blocking.
 """
 
-import json
 import os
-import time
-from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+import json
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, Response, Request, Body
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import uvicorn
 
 import bmd45_pipeline
 import iot_simulator
@@ -18,6 +23,17 @@ import route_optimizer
 import cctv_video_processor
 import scenario_simulator
 
+app = FastAPI(title="RoutePulse AI Engine & Command Center", version="2.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize Core AI Modules
 pipe = bmd45_pipeline.BMD45Pipeline()
 sim = iot_simulator.IoTSimulator()
 pred = predictor.TrafficPredictor()
@@ -27,241 +43,121 @@ scenario = scenario_simulator.ScenarioSimulator()
 
 current_simulation_state = scenario.simulate_scenario()
 
-HTML_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "traffic_dashboard.html")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HTML_V1 = os.path.join(PROJECT_ROOT, "traffic_dashboard.html")
+HTML_V2 = os.path.join(PROJECT_ROOT, "traffic_dashboard_v2.html")
 
-class TrafficAPIHandler(BaseHTTPRequestHandler):
-    protocol_version = "HTTP/1.1"
+# Static Dashboard UI Routes
+@app.get("/")
+async def serve_root():
+    return FileResponse(HTML_V2)
 
-    def _send_cors_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+@app.get("/v2")
+@app.get("/v2.html")
+@app.get("/traffic_dashboard_v2.html")
+async def serve_v2():
+    return FileResponse(HTML_V2)
 
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self._send_cors_headers()
-        self.end_headers()
+@app.get("/traffic_dashboard.html")
+async def serve_v1():
+    return FileResponse(HTML_V1)
 
-    def do_HEAD(self):
-        self.do_GET()
+# Live OpenCV CCTV Video Stream & Frame Endpoints
+@app.get("/api/video/frame")
+async def get_video_frame():
+    frame_data = video_proc.process_next_frame()
+    return Response(content=frame_data["jpeg_bytes"], media_type="image/jpeg")
 
-    def do_GET(self):
-        parsed = urlparse(self.path)
-        path = parsed.path
-        query = parse_qs(parsed.query)
+@app.get("/api/video/telemetry")
+async def get_video_telemetry():
+    frame_data = video_proc.process_next_frame()
+    telemetry = {k: v for k, v in frame_data.items() if k != "jpeg_bytes"}
+    return telemetry
 
-        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Scenario Simulator & Explainable AI Endpoints
+@app.get("/api/simulation/current")
+async def get_current_simulation():
+    return current_simulation_state
 
-        # Serve HTML Dashboard UI at root or specific html paths
-        if path in ["/", "/index.html", "/dashboard", "/traffic_dashboard.html", "/traffic_dashboard_v2.html", "/v2", "/v2.html"]:
-            target_name = "traffic_dashboard_v2.html" if path in ["/v2", "/v2.html", "/traffic_dashboard_v2.html"] else "traffic_dashboard.html"
-            target_path = os.path.join(PROJECT_ROOT, target_name)
+@app.post("/api/simulation/apply")
+async def apply_simulation(payload: Dict[str, Any] = Body(...)):
+    global current_simulation_state
+    vol_mult = float(payload.get("volume_multiplier", 1.0))
+    rain = bool(payload.get("rain_active", False))
+    accident = payload.get("accident_corridor", None)
+    closure = bool(payload.get("lane_closure_active", False))
 
-            try:
-                with open(target_path, 'rb') as f:
-                    body_bytes = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', 'text/html; charset=utf-8')
-                self.send_header('Content-Length', str(len(body_bytes)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(body_bytes)
-            except Exception as e:
-                self.send_error(500, f"Error loading dashboard: {e}")
-            return
+    current_simulation_state = scenario.simulate_scenario(vol_mult, rain, accident, closure)
+    return current_simulation_state
 
-        # Serve static HTML, CSS, JS files
-        if path.endswith((".html", ".css", ".js")):
-            clean_path = path.lstrip("/")
-            file_path = os.path.join(PROJECT_ROOT, clean_path)
-            if not os.path.exists(file_path):
-                file_path = os.path.join(PROJECT_ROOT, "web_dashboard", clean_path)
+@app.get("/api/traffic/explain")
+async def get_xai_explain():
+    return {
+        "corridor": "Silk Board Junction",
+        "xai_breakdown": current_simulation_state.get("xai_breakdown", [])
+    }
 
-            if os.path.exists(file_path) and os.path.isfile(file_path):
-                try:
-                    with open(file_path, 'rb') as f:
-                        body_bytes = f.read()
-                    self.send_response(200)
-                    if path.endswith(".html"):
-                        self.send_header('Content-Type', 'text/html; charset=utf-8')
-                    elif path.endswith(".css"):
-                        self.send_header('Content-Type', 'text/css; charset=utf-8')
-                    elif path.endswith(".js"):
-                        self.send_header('Content-Type', 'application/javascript; charset=utf-8')
-                    self.send_header('Content-Length', str(len(body_bytes)))
-                    self._send_cors_headers()
-                    self.end_headers()
-                    self.wfile.write(body_bytes)
-                except Exception as e:
-                    self.send_error(500, f"Error serving static file: {e}")
-                return
+@app.get("/api/incidents/active")
+async def get_active_incidents():
+    return {
+        "active_incidents_count": current_simulation_state.get("summary", {}).get("active_incidents_count", 0),
+        "incidents": current_simulation_state.get("incidents", [])
+    }
 
-        # Serve Live Video Stream (MJPEG format)
-        if path == "/api/video/feed":
-            self.send_response(200)
-            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=frame')
-            self._send_cors_headers()
-            self.end_headers()
-            try:
-                for _ in range(50):
-                    frame_data = video_proc.process_next_frame()
-                    jpg_bytes = frame_data["jpeg_bytes"]
-                    self.wfile.write(b'--frame\r\n')
-                    self.send_header('Content-Type', 'image/jpeg')
-                    self.send_header('Content-Length', str(len(jpg_bytes)))
-                    self.end_headers()
-                    self.wfile.write(jpg_bytes)
-                    self.wfile.write(b'\r\n')
-                    time.sleep(0.04) # ~25 FPS
-            except Exception:
-                pass
-            return
+@app.get("/api/datasets/available")
+async def get_available_datasets():
+    return {
+        "datasets": [
+            {"id": "bmd45", "name": "IISc BMD-45 Bengaluru Mobility Vision Dataset", "type": "Real-world CCTV 14-Vehicle Classes", "status": "ACTIVE"},
+            {"id": "metr_la", "name": "METR-LA Highway Traffic Sensor Time-Series", "type": "Loop Detector Speed Telemetry", "status": "READY"},
+            {"id": "ua_detrac", "name": "UA-DETRAC Real Traffic Video Dataset", "type": "CCTV Bounding Boxes & Optical Tracking", "status": "READY"},
+            {"id": "bengaluru_graph", "name": "Bengaluru Arterial OpenStreetMap Graph", "type": "Geospatial Road Network", "status": "ACTIVE"}
+        ]
+    }
 
-        # Serve Live Single Video Frame JPEG
-        if path == "/api/video/frame":
-            frame_data = video_proc.process_next_frame()
-            self.send_response(200)
-            self.send_header('Content-Type', 'image/jpeg')
-            self._send_cors_headers()
-            self.end_headers()
-            self.wfile.write(frame_data["jpeg_bytes"])
-            return
+# General API Telemetry & Optimization Routes
+@app.get("/api/info")
+@app.get("/api")
+async def get_api_info():
+    return {
+        "status": "ONLINE",
+        "server": "FastAPI + Uvicorn High-Performance Server",
+        "system": "Traffic Congestion AI Engine (AI/ML-09)",
+        "endpoints": ["/api/video/frame", "/api/video/telemetry", "/api/traffic/live", "/api/traffic/predict", "/api/simulation/current", "/api/route/optimize"]
+    }
 
-        # Serve Live Video Computed Telemetry JSON
-        if path == "/api/video/telemetry":
-            frame_data = video_proc.process_next_frame()
-            # Remove raw bytes from JSON response
-            telemetry = {k: v for k, v in frame_data.items() if k != "jpeg_bytes"}
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self._send_cors_headers()
-            self.end_headers()
-            self.wfile.write(json.dumps(telemetry, indent=2).encode('utf-8'))
-            return
+@app.get("/api/traffic/live")
+async def get_live_traffic():
+    frame_data = video_proc.process_next_frame()
+    video_telemetry = {k: v for k, v in frame_data.items() if k != "jpeg_bytes"}
 
-        # Serve API endpoints
-        response = {}
+    telemetry = sim.get_live_telemetry()
+    telemetry[0]["congestion_pct"] = video_telemetry["congestion_pct"]
+    telemetry[0]["current_speed_kmh"] = video_telemetry["avg_speed_kmh"]
+    telemetry[0]["delay_min"] = video_telemetry["delay_min"]
+    telemetry[0]["status"] = video_telemetry["status"]
+    telemetry[0]["status_color"] = video_telemetry["status_color"]
 
-        if path == "/api" or path == "/api/info":
-            response = {
-                "status": "ONLINE",
-                "server": "OpenCV CCTV Video Processing Server",
-                "system": "Traffic Congestion AI Engine (AI/ML-09)",
-                "endpoints": ["/api/video/feed", "/api/video/telemetry", "/api/traffic/live", "/api/traffic/predict", "/api/route/optimize", "/api/simulation/current", "/api/datasets/available"]
-            }
-        elif path == "/api/traffic/live":
-            # Direct calculation from OpenCV CCTV Video Processing Pipeline!
-            frame_data = video_proc.process_next_frame()
-            video_telemetry = {k: v for k, v in frame_data.items() if k != "jpeg_bytes"}
+    return {
+        "corridors_count": len(telemetry),
+        "video_analytics": video_telemetry,
+        "telemetry": telemetry
+    }
 
-            telemetry = sim.get_live_telemetry()
-            # Inject live CCTV video frame analytics into primary corridor
-            telemetry[0]["congestion_pct"] = video_telemetry["congestion_pct"]
-            telemetry[0]["current_speed_kmh"] = video_telemetry["avg_speed_kmh"]
-            telemetry[0]["delay_min"] = video_telemetry["delay_min"]
-            telemetry[0]["status"] = video_telemetry["status"]
-            telemetry[0]["status_color"] = video_telemetry["status_color"]
+@app.get("/api/traffic/predict")
+async def get_traffic_predict():
+    telemetry = sim.get_live_telemetry()
+    return pred.get_citywide_forecast(telemetry)
 
-            response = {
-                "corridors_count": len(telemetry),
-                "video_analytics": video_telemetry,
-                "telemetry": telemetry
-            }
-        elif path == "/api/traffic/predict":
-            telemetry = sim.get_live_telemetry()
-            response = pred.get_citywide_forecast(telemetry)
-        elif path == "/api/camera/sample":
-            sample_id = query.get("sample_id", [None])[0]
-            response = pipe.get_cctv_sample(sample_id)
-        elif path == "/api/route/optimize":
-            route_id = query.get("route_id", [None])[0]
-            response = opt.calculate_optimized_route(route_id)
-        elif path == "/api/simulation/current":
-            response = current_simulation_state
-        elif path == "/api/traffic/explain":
-            response = {
-                "corridor": "Silk Board Junction",
-                "xai_breakdown": current_simulation_state.get("xai_breakdown", [])
-            }
-        elif path == "/api/incidents/active":
-            response = {
-                "active_incidents_count": current_simulation_state.get("summary", {}).get("active_incidents_count", 0),
-                "incidents": current_simulation_state.get("incidents", [])
-            }
-        elif path == "/api/datasets/available":
-            response = {
-                "datasets": [
-                    {"id": "bmd45", "name": "IISc BMD-45 Bengaluru Mobility Vision Dataset", "type": "Real-world CCTV 14-Vehicle Classes", "status": "ACTIVE"},
-                    {"id": "metr_la", "name": "METR-LA Highway Traffic Sensor Time-Series", "type": "Loop Detector Speed Telemetry", "status": "READY"},
-                    {"id": "ua_detrac", "name": "UA-DETRAC Real Traffic Video Dataset", "type": "CCTV Bounding Boxes & Optical Tracking", "status": "READY"},
-                    {"id": "bengaluru_graph", "name": "Bengaluru Arterial OpenStreetMap Graph", "type": "Geospatial Road Network", "status": "ACTIVE"}
-                ]
-            }
-        json_bytes = json.dumps(response, indent=2).encode('utf-8')
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Content-Length', str(len(json_bytes)))
-        self._send_cors_headers()
-        self.end_headers()
-        self.wfile.write(json_bytes)
+@app.get("/api/route/optimize")
+async def get_route_optimize(route_id: Optional[str] = None):
+    return opt.calculate_optimized_route(route_id)
 
-    def do_POST(self):
-        parsed = urlparse(self.path)
-
-        if parsed.path == "/api/simulation/apply":
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
-            try:
-                body = json.loads(post_data.decode('utf-8'))
-            except Exception:
-                body = {}
-
-            vol_mult = float(body.get("volume_multiplier", 1.0))
-            rain = bool(body.get("rain_active", False))
-            accident = body.get("accident_corridor", None)
-            closure = bool(body.get("lane_closure_active", False))
-
-            global current_simulation_state
-            current_simulation_state = scenario.simulate_scenario(vol_mult, rain, accident, closure)
-
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self._send_cors_headers()
-            self.end_headers()
-            self.wfile.write(json.dumps(current_simulation_state, indent=2).encode('utf-8'))
-            return
-
-        if parsed.path == "/api/emergency/greenwave":
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
-            try:
-                body = json.loads(post_data.decode('utf-8'))
-            except Exception:
-                body = {}
-
-            corridor = body.get("corridor", "Silk Board Junction")
-            hospital = body.get("hospital_name", "St. John's Hospital")
-
-            result = opt.activate_emergency_green_wave(corridor, hospital)
-
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self._send_cors_headers()
-            self.end_headers()
-            self.wfile.write(json.dumps(result, indent=2).encode('utf-8'))
-
-def run_server(port=8000):
-    server_address = ('', port)
-    httpd = ThreadingHTTPServer(server_address, TrafficAPIHandler)
-    print("=================================================================")
-    print(f" [+] OpenCV CCTV Video Processing Server & UI running at http://localhost:{port}")
-    print(" Press Ctrl+C to stop the server.")
-    print("=================================================================")
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nStopping server...")
+@app.post("/api/emergency/greenwave")
+async def trigger_emergency_greenwave(payload: Dict[str, Any] = Body(...)):
+    corridor = payload.get("corridor", "Silk Board Junction")
+    hospital = payload.get("hospital_name", "St. John's Hospital (Koramangala)")
+    return opt.activate_emergency_green_wave(corridor, hospital)
 
 if __name__ == "__main__":
-    run_server(8000)
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False, workers=2)
