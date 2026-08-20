@@ -768,10 +768,13 @@
   let defaultCityMarkers = [];
   let searchMarkersGroup = [];
   let searchRoutePolyline = null;
-
-
-let mapInitialized = false;
-  let leafletMap, mapCorridorLine, mapRerouteLine;
+  let activeRouteIndex = 0;
+  let allAvailableRoutes = [];
+  let routePolylines = [];
+  let mapInitialized = false;
+  let leafletMap = null;
+  let mapCorridorLine = null;
+  let mapRerouteLine = null;
 
   function switchMonitorTab(mode) {
     const cctvBox = document.getElementById('cctvContainer');
