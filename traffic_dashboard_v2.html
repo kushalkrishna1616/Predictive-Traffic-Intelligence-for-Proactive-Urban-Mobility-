@@ -338,7 +338,7 @@
       <div class="side-item" title="Live Cameras">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
       </div>
-      <div class="side-item" title="Route Planner">
+      <div class="side-item" title="Route Planner" onclick="openRouteModal()" style="cursor:pointer;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a4 4 0 0 0 4-4v-1a4 4 0 0 0-4-4H9a4 4 0 0 1-4-4v-1"/></svg>
       </div>
       <div class="side-item" title="Predictions">
@@ -1134,9 +1134,23 @@
     return [fallbackLat, fallbackLng, defaultName];
   }
 
-    let activeRouteIndex = 0;
+    
+  let activeRouteIndex = 0;
   let allAvailableRoutes = [];
   let routePolylines = [];
+
+  function openRouteModal() {
+    const modal = document.getElementById('routePlannerModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      renderModalRouteCards();
+    }
+  }
+
+  function closeRouteModal() {
+    const modal = document.getElementById('routePlannerModal');
+    if (modal) modal.style.display = 'none';
+  }
 
   async function fetchOSRMRoute(startLat, startLng, endLat, endLng) {
     try {
@@ -1180,7 +1194,7 @@
     const destInput = document.getElementById('destInput');
 
     const originText = originInput ? originInput.value.trim() : "Banashankari Junction, Bengaluru";
-    const destText = destInput ? destInput.value.trim() : "Indiranagar 100ft Road, Bengaluru";
+    const destText = destInput ? destInput.value.trim() : "Richmond Circle, Bengaluru";
 
     switchMonitorTab('map');
 
@@ -1188,52 +1202,73 @@
     if (noteEl) noteEl.innerHTML = `🔍 AI Computing Multi-Route Paths for <b>${originText} → ${destText}</b>...`;
 
     const [oLat, oLng, oName] = await geocodeLocation(originText, 12.9255, 77.5468, originText);
-    const [dLat, dLng, dName] = await geocodeLocation(destText, 12.9710, 77.6410, destText);
+    const [dLat, dLng, dName] = await geocodeLocation(destText, 12.9600, 77.5970, destText);
 
     let osrmRoutes = await fetchOSRMRoute(oLat, oLng, dLat, dLng);
 
     if (!osrmRoutes || osrmRoutes.length === 0) {
       const straightLine = [[oLat, oLng], [(oLat+dLat)/2, (oLng+dLng)/2], [dLat, dLng]];
-      osrmRoutes = [{ coords: straightLine, distKm: "14.5", durationMin: 26, routeIndex: 0 }];
+      osrmRoutes = [{ coords: straightLine, distKm: "7.8", durationMin: 18, routeIndex: 0 }];
     }
 
-    // Ensure we have 2-3 distinct alternative corridors to show available routes
-    if (osrmRoutes.length === 1) {
-      const baseCoords = osrmRoutes[0].coords;
-      const alt1Coords = createOffsetRoute(baseCoords, 0.18, oLat, oLng, dLat, dLng);
-      const alt2Coords = createOffsetRoute(baseCoords, -0.15, oLat, oLng, dLat, dLng);
-      const baseKm = parseFloat(osrmRoutes[0].distKm);
-      const baseMin = parseInt(osrmRoutes[0].durationMin);
+    const baseCoords = osrmRoutes[0].coords;
+    const baseKm = parseFloat(osrmRoutes[0].distKm) || 8.0;
+    const baseMin = parseInt(osrmRoutes[0].durationMin) || 18;
 
-      osrmRoutes.push({
-        coords: alt1Coords,
-        distKm: (baseKm * 1.09).toFixed(1),
-        durationMin: Math.round(baseMin * 1.18),
-        routeIndex: 1,
-        name: "Alt Corridor via Arterial Loop"
-      });
-      osrmRoutes.push({
-        coords: alt2Coords,
-        distKm: (baseKm * 1.15).toFixed(1),
-        durationMin: Math.round(baseMin * 1.45),
-        routeIndex: 2,
-        name: "Alt Corridor via Ring Road Expressway"
-      });
-    } else if (osrmRoutes.length === 2) {
-      const baseCoords = osrmRoutes[0].coords;
-      const alt2Coords = createOffsetRoute(baseCoords, -0.16, oLat, oLng, dLat, dLng);
-      const baseKm = parseFloat(osrmRoutes[0].distKm);
-      const baseMin = parseInt(osrmRoutes[0].durationMin);
-      osrmRoutes.push({
-        coords: alt2Coords,
-        distKm: (baseKm * 1.14).toFixed(1),
-        durationMin: Math.round(baseMin * 1.38),
-        routeIndex: 2,
-        name: "Alt Corridor via Inner Ring Road"
-      });
-    }
+    // Build 3 comprehensive routes (Optimal + 2 Alternatives)
+    const finalRoutes = [];
 
-    allAvailableRoutes = osrmRoutes;
+    // Route 1: Optimal Route
+    finalRoutes.push({
+      coords: baseCoords,
+      distKm: baseKm.toFixed(1),
+      durationMin: baseMin,
+      name: "⭐ OPTIMAL AI ROUTE (Fastest Flow)",
+      via: `Direct Arterial via ${oName} → ${dName}`,
+      tag: "OPTIMAL",
+      color: "#38BDF8",
+      pcuAvg: "24.2 PCU",
+      speedAvg: "38 km/h",
+      delayMin: "+0m",
+      dashArray: null,
+      routeIndex: 0
+    });
+
+    // Route 2: Alternative Route A
+    const alt1Coords = osrmRoutes.length > 1 ? osrmRoutes[1].coords : createOffsetRoute(baseCoords, 0.22, oLat, oLng, dLat, dLng);
+    finalRoutes.push({
+      coords: alt1Coords,
+      distKm: (baseKm * 1.12).toFixed(1),
+      durationMin: Math.round(baseMin * 1.25),
+      name: "⚡ ALTERNATIVE ROUTE A (Arterial Loop)",
+      via: `Via Outer Ring Road / 80ft Corridor`,
+      tag: "MODERATE",
+      color: "#F59E0B",
+      pcuAvg: "36.5 PCU",
+      speedAvg: "24 km/h",
+      delayMin: "+4.5m",
+      dashArray: "7, 8",
+      routeIndex: 1
+    });
+
+    // Route 3: Alternative Route B (Congested Bottleneck)
+    const alt2Coords = osrmRoutes.length > 2 ? osrmRoutes[2].coords : createOffsetRoute(baseCoords, -0.24, oLat, oLng, dLat, dLng);
+    finalRoutes.push({
+      coords: alt2Coords,
+      distKm: (baseKm * 1.22).toFixed(1),
+      durationMin: Math.round(baseMin * 1.65),
+      name: "⚠️ ALTERNATIVE ROUTE B (High Bottleneck)",
+      via: `Via Central Junction Bottleneck Bypass`,
+      tag: "CONGESTED",
+      color: "#FB6169",
+      pcuAvg: "52.8 PCU",
+      speedAvg: "14 km/h",
+      delayMin: "+11.0m",
+      dashArray: "4, 6",
+      routeIndex: 2
+    });
+
+    allAvailableRoutes = finalRoutes;
     renderMultiRoutesOnMap(0, oLat, oLng, dLat, dLng, oName, dName);
   }
 
@@ -1255,22 +1290,14 @@
 
     activeRouteIndex = selectedIdx;
 
-    // Route Styles: 0: Best AI Route, 1: Alt A, 2: Alt B
-    const routeStyles = [
-      { color: '#38BDF8', weight: 7, opacity: 0.95, dashArray: null, label: '⭐ BEST AI ROUTE', tag: 'Fast Flow' },
-      { color: '#F59E0B', weight: 5, opacity: 0.85, dashArray: '7, 8', label: '⚡ ALT ROUTE A', tag: 'Moderate' },
-      { color: '#FB6169', weight: 4.5, opacity: 0.8, dashArray: '4, 6', label: '⚠️ ALT ROUTE B', tag: 'Congested' }
-    ];
-
-    // Render all route polylines
+    // Draw all 3 routes on map
     allAvailableRoutes.forEach((rt, rIdx) => {
       const isSelected = rIdx === selectedIdx;
-      const st = routeStyles[rIdx % routeStyles.length];
       const poly = L.polyline(rt.coords, {
-        color: isSelected ? st.color : '#64748B',
-        weight: isSelected ? st.weight + 1 : 4,
-        opacity: isSelected ? 0.95 : 0.6,
-        dashArray: isSelected ? st.dashArray : '5, 8'
+        color: isSelected ? rt.color : '#64748B',
+        weight: isSelected ? 7 : 4,
+        opacity: isSelected ? 0.95 : 0.5,
+        dashArray: isSelected ? rt.dashArray : '5, 8'
       }).addTo(leafletMap);
 
       poly.on('click', () => {
@@ -1280,9 +1307,6 @@
       routePolylines.push(poly);
     });
 
-    const activeRoute = allAvailableRoutes[selectedIdx] || allAvailableRoutes[0];
-    const waypoints = activeRoute.coords;
-
     // Origin & Destination pins
     const mkPin = (lat,lng,html,sz) => L.marker([lat,lng],{icon:L.divIcon({className:'',html,iconSize:sz,iconAnchor:[sz[0]/2,sz[1]/2]})});
     const oPin = mkPin(oLat,oLng,`<div style="background:#0284C7;color:#FFF;border:2px solid #FFF;padding:4px 10px;border-radius:12px;font-family:sans-serif;font-size:11.5px;font-weight:800;white-space:nowrap;box-shadow:0 0 16px rgba(2,132,199,0.8);cursor:pointer;">🚩 ${oName}</div>`,[110,28]);
@@ -1290,108 +1314,148 @@
     oPin.addTo(leafletMap); dPin.addTo(leafletMap);
     searchMarkersGroup.push(oPin, dPin);
 
-    // ── DYNAMIC CCTV & SATELLITE VIDEO CHECKPOINTS ALONG THE ACTIVE ROUTE ──
-    const numDevices = Math.min(8, Math.max(4, Math.floor(waypoints.length / 8)));
-    const step = Math.floor(waypoints.length / (numDevices + 1));
-    const statusPool = ["CLEAR","FLOWING","MODERATE","HEAVY","CONGESTED","OPTIMAL","FAST FLOW"];
-    const typePoolCam = ["CCTV Vision AI", "4K Traffic AI Cam", "PTZ Speed Camera", "AI Lane Counter"];
-    const typePoolSat = ["Orbital Satellite Vision", "Geostationary Satellite Link", "High-Altitude Aerial Feed", "Macro Traffic Satellite"];
+    // ── DEPLOY ALL 17 CCTV & SATELLITE CAMERAS ACROSS THE ROUTES ──
+    allAvailableRoutes.forEach((routeObj, rIdx) => {
+      const rCoords = routeObj.coords;
+      const isSelectedRoute = rIdx === selectedIdx;
+      // Distribute 5 to 6 cameras per route so all 17 cameras are active
+      const countPerRoute = rIdx === 0 ? 6 : (rIdx === 1 ? 6 : 5);
+      const step = Math.floor(rCoords.length / (countPerRoute + 1));
 
-    for (let i = 1; i <= numDevices; i++) {
-      const idx = Math.min(i * step, waypoints.length - 1);
-      const [wLat, wLng] = waypoints[idx];
-      const jLat = wLat + (Math.random() - 0.5) * 0.003;
-      const jLng = wLng + (Math.random() - 0.5) * 0.003;
+      for (let k = 1; k <= countPerRoute; k++) {
+        const cIdx = (rIdx * 6 + k - 1) % devices.length;
+        const dev = devices[cIdx];
+        const pointIdx = Math.min(k * step, rCoords.length - 1);
+        const [wLat, wLng] = rCoords[pointIdx];
+        const jLat = wLat + (Math.random() - 0.5) * (isSelectedRoute ? 0.002 : 0.004);
+        const jLng = wLng + (Math.random() - 0.5) * (isSelectedRoute ? 0.002 : 0.004);
 
-      const isCam = i % 2 === 1;
-      const pcu = (Math.random() * 45 + 12).toFixed(1);
-      const speed = Math.floor(Math.random() * 50 + 15);
-      const status = statusPool[Math.floor(Math.random() * statusPool.length)];
-      const devType = isCam ? typePoolCam[i % typePoolCam.length] : typePoolSat[i % typePoolSat.length];
-      const devId = isCam ? `CAM-${9000 + i}` : `SAT-${2000 + i}`;
-      const label = isCam ? "📹 CCTV AI" : "🛰️ SATELLITE";
-      const col = isCam ? "#38BDF8" : "#10B981";
-      const glow = isCam ? "rgba(56,189,248,0.8)" : "rgba(16,185,129,0.8)";
-      const isCrit = status.includes("CRIT") || status.includes("SEVERE") || status.includes("HEAVY");
-      const isFree = status.includes("CLEAR") || status.includes("FAST") || status.includes("OPT") || status.includes("FLOW");
-      const sc = isCrit ? "#FB6169" : (isFree ? "#34D399" : "#FFB547");
+        const isCam = dev.type.includes("CCTV") || !dev.id.startsWith("SAT");
+        const col = isCam ? "#38BDF8" : "#10B981";
+        const glow = isCam ? "rgba(56,189,248,0.8)" : "rgba(16,185,129,0.8)";
+        const label = isCam ? "📹 CCTV AI" : "🛰️ SATELLITE";
 
-      const devIcon = L.divIcon({
-        className: '',
-        html: `<div style="background:#0F172A;color:${col};border:2px solid ${glow};padding:3px 7px;border-radius:10px;font-family:monospace;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 0 10px ${glow};cursor:pointer;">${label}</div>`,
-        iconSize: [78, 24],
-        iconAnchor: [39, 12]
-      });
+        const devIcon = L.divIcon({
+          className: '',
+          html: `<div style="background:#0F172A;color:${col};border:2px solid ${glow};padding:3px 7px;border-radius:10px;font-family:monospace;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 0 10px ${glow};cursor:pointer;opacity:${isSelectedRoute ? 1.0 : 0.75};">${label}</div>`,
+          iconSize: [78, 24],
+          iconAnchor: [39, 12]
+        });
 
-      const marker = L.marker([jLat, jLng], { icon: devIcon }).addTo(leafletMap);
-      searchMarkersGroup.push(marker);
+        const marker = L.marker([jLat, jLng], { icon: devIcon }).addTo(leafletMap);
+        searchMarkersGroup.push(marker);
 
-      const selectedRouteVideo = isCam ? devices[i % 10].video : devices[10 + (i % 7)].video;
-      const timeOffset = (i * 2.5) % 15;
-      const tagLabel = isCam ? "● LIVE CCTV FEED" : "● LIVE SATELLITE FEED";
+        const selectedVideo = dev.video;
+        const timeOffset = (k * 2) % 15;
+        const tagLabel = isCam ? "● LIVE CCTV FEED" : "● LIVE SATELLITE FEED";
 
-      const liveMediaHtml = `
-        <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${col}; position:relative; background:#000;">
-          <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block;"
-            src="${encodeURI(selectedRouteVideo)}#t=${timeOffset}">
-          </video>
-          <div style="position:absolute; top:4px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">${tagLabel}</div>
-          <div style="position:absolute; bottom:4px; right:6px; background:rgba(0,0,0,0.75); color:${col}; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">FPS: 30.0</div>
-        </div>
-        <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE: ${devId} (${devType})'; document.getElementById('cameraHudId').textContent='FEED: ${devId}'; " 
-          style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, ${col}, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
-          📺 VIEW IN MAIN MONITOR
-        </button>
-      `;
-
-      marker.bindPopup(L.popup({ maxWidth: 260 }).setContent(`
-        <div style="font-family:'Inter',sans-serif;padding:4px 2px;color:#0D111C;min-width:220px;">
-          <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.5px;">${devType}</div>
-          <div style="font-size:13px;font-weight:700;color:#0F172A;margin:3px 0 2px;">${devId} · Route Checkpoint ${i}</div>
-          <div style="font-size:11px;color:#64748B;margin-bottom:6px;">📍 Along ${oName} → ${dName}</div>
-          <div style="background:#F1F5F9;padding:8px 10px;border-radius:6px;font-family:monospace;font-size:11px;display:flex;justify-content:space-between;margin-bottom:5px;">
-            <span>PCU: <b>${pcu}</b></span><span>Speed: <b>${speed} km/h</b></span>
+        const liveMediaHtml = `
+          <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${col}; position:relative; background:#000;">
+            <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block;"
+              src="${encodeURI(selectedVideo)}#t=${timeOffset}">
+            </video>
+            <div style="position:absolute; top:4px; left:6px; background:rgba(251,97,105,0.9); color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; font-family:monospace; box-shadow:0 0 8px rgba(251,97,105,0.6);">${tagLabel}</div>
+            <div style="position:absolute; bottom:4px; right:6px; background:rgba(0,0,0,0.75); color:${col}; font-size:9px; padding:2px 6px; border-radius:4px; font-family:monospace;">FPS: 30.0</div>
           </div>
-          <div style="font-size:11px;font-weight:700;color:${sc};margin-bottom:4px;">● ${status}</div>
-          ${liveMediaHtml}
-        </div>
-      `));
-    }
+          <button onclick="switchMonitorTab('cctv'); document.getElementById('monSubtitle').textContent='LIVE: ${dev.name}'; document.getElementById('cameraHudId').textContent='FEED: ${dev.name}'; " 
+            style="margin-top:8px; width:100%; padding:6px 10px; background:linear-gradient(135deg, ${col}, #0284C7); color:#0F172A; border:none; border-radius:6px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:filter 0.2s;">
+            📺 VIEW IN MAIN MONITOR
+          </button>
+        `;
 
-    // Auto-fit map to the active route polyline
+        marker.bindPopup(L.popup({ maxWidth: 260 }).setContent(`
+          <div style="font-family:'Inter',sans-serif;padding:4px 2px;color:#0D111C;min-width:220px;">
+            <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.5px;">${dev.type} · [${routeObj.name.split(' ')[0]} ${routeObj.name.split(' ')[1]}]</div>
+            <div style="font-size:13px;font-weight:700;color:#0F172A;margin:3px 0 2px;">${dev.name}</div>
+            <div style="font-size:11px;color:#64748B;margin-bottom:6px;">📍 ${dev.road} (Along ${oName} → ${dName})</div>
+            <div style="background:#F1F5F9;padding:8px 10px;border-radius:6px;font-family:monospace;font-size:11px;display:flex;justify-content:space-between;margin-bottom:5px;">
+              <span>PCU: <b>${dev.pcu}</b></span><span>Speed: <b>${dev.speed}</b></span>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:${dev.status.includes('CON')||dev.status.includes('HEAVY')?'#FB6169':'#34D399'};margin-bottom:4px;">● ${dev.status}</div>
+            ${liveMediaHtml}
+          </div>
+        `));
+      }
+    });
+
+    // Auto-fit bounds
     const activePoly = routePolylines[selectedIdx] || routePolylines[0];
     if (activePoly) {
       leafletMap.fitBounds(activePoly.getBounds(), { padding: [60, 60] });
     }
 
-    // Build interactive Route Option Switcher Pills
+    // Render interactive Route Option Switcher Banner
     const noteEl = document.getElementById('predictNoteText');
     if (noteEl) {
-      let pillsHtml = `<div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:4px;">`;
+      let pillsHtml = `<div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px;">`;
       allAvailableRoutes.forEach((rt, idx) => {
         const isSel = idx === selectedIdx;
-        const st = routeStyles[idx % routeStyles.length];
-        const borderCol = isSel ? st.color : 'rgba(255,255,255,0.2)';
-        const bgCol = isSel ? 'rgba(56,189,248,0.25)' : 'rgba(15,23,42,0.6)';
+        const borderCol = isSel ? rt.color : 'rgba(255,255,255,0.2)';
+        const bgCol = isSel ? 'rgba(56,189,248,0.22)' : 'rgba(15,23,42,0.7)';
         const star = idx === 0 ? '⭐ ' : (idx === 1 ? '⚡ ' : '⚠️ ');
-        const labelText = idx === 0 ? 'BEST AI ROUTE' : (idx === 1 ? 'ALT ROUTE A' : 'ALT ROUTE B');
+        const badgeLabel = idx === 0 ? 'OPTIMAL ROUTE' : (idx === 1 ? 'ALT ROUTE A' : 'ALT ROUTE B');
 
         pillsHtml += `
           <button onclick="renderMultiRoutesOnMap(${idx}, ${oLat}, ${oLng}, ${dLat}, ${dLng}, '${oName}', '${dName}')"
-            style="background:${bgCol}; border:2px solid ${borderCol}; color:#FFF; padding:5px 12px; border-radius:8px; font-family:'Inter',sans-serif; font-size:11.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all 0.2s; box-shadow:${isSel ? '0 0 12px ' + st.color : 'none'};">
-            <span>${star}<b>${labelText}</b>: ${rt.distKm} km · ${rt.durationMin} mins</span>
-            <span style="font-size:9.5px; background:${st.color}; color:#0F172A; padding:2px 5px; border-radius:4px; font-weight:800;">${st.tag}</span>
+            style="background:${bgCol}; border:2px solid ${borderCol}; color:#FFF; padding:6px 12px; border-radius:8px; font-family:'Inter',sans-serif; font-size:11.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; transition:all 0.2s; box-shadow:${isSel ? '0 0 14px ' + rt.color : 'none'};">
+            <span>${star}<b>${badgeLabel}</b>: <b>${rt.distKm} km</b> · <b>${rt.durationMin} mins</b></span>
+            <span style="font-size:9.5px; background:${rt.color}; color:#0F172A; padding:2px 6px; border-radius:4px; font-weight:800;">${rt.tag}</span>
           </button>
         `;
       });
-      pillsHtml += `</div>`;
+      pillsHtml += `
+        <button onclick="openRouteModal()" style="background:linear-gradient(135deg, #38BDF8, #0284C7); color:#0F172A; border:none; padding:6px 12px; border-radius:8px; font-weight:800; font-size:11px; cursor:pointer; margin-left:auto;">
+          🔀 COMPARE ALL ROUTES & VIDEOS
+        </button>
+      </div>`;
 
       noteEl.innerHTML = `
-        <div style="font-size:12.5px; margin-bottom:4px;">🗺️ <b>Available Routes Found</b>: <b>${oName} → ${dName}</b> (Click any route below to compare & view video feeds):</div>
+        <div style="font-size:12.5px; margin-bottom:2px;">🗺️ <b>Available Routes Found</b>: <b>${oName} → ${dName}</b> (All 3 Routes and 17 Video Checkpoints Active):</div>
         ${pillsHtml}
       `;
     }
+
+    renderModalRouteCards();
   }
+
+  function renderModalRouteCards() {
+    const container = document.getElementById('modalRoutesContainer');
+    const feedContainer = document.getElementById('modalCameraFeeds');
+    if (!container) return;
+
+    container.innerHTML = allAvailableRoutes.map((rt, idx) => {
+      const isSel = idx === activeRouteIndex;
+      return `
+        <div style="background:${isSel ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.03)'}; border:2px solid ${isSel ? rt.color : 'rgba(255,255,255,0.1)'}; border-radius:12px; padding:14px; position:relative; box-shadow:${isSel ? '0 0 16px ' + rt.color : 'none'};">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="font-size:12px; font-weight:800; color:${rt.color};">${rt.name}</span>
+            <span style="font-size:10px; background:${rt.color}; color:#0F172A; padding:2px 6px; border-radius:4px; font-weight:800;">${rt.tag}</span>
+          </div>
+          <div style="font-size:20px; font-weight:800; margin-bottom:4px;">${rt.durationMin} mins <span style="font-size:13px; color:#94A3B8; font-weight:500;">(${rt.distKm} km)</span></div>
+          <div style="font-size:11.5px; color:#94A3B8; margin-bottom:8px;">${rt.via}</div>
+          <div style="font-family:monospace; font-size:11px; background:rgba(0,0,0,0.3); padding:6px 8px; border-radius:6px; margin-bottom:10px; display:flex; justify-content:space-between;">
+            <span>Load: <b>${rt.pcuAvg}</b></span>
+            <span>Speed: <b>${rt.speedAvg}</b></span>
+            <span>Delay: <b style="color:${rt.delayMin==='+0m'?'#34D399':'#FB6169'};">${rt.delayMin}</b></span>
+          </div>
+          <button onclick="renderMultiRoutesOnMap(${idx}, 12.9255, 77.5468, 12.9600, 77.5970, 'Banashankari', 'Richmond Circle'); closeRouteModal();"
+            style="width:100%; padding:7px; background:${isSel ? rt.color : 'rgba(255,255,255,0.08)'}; color:${isSel ? '#0F172A' : '#FFF'}; border:none; border-radius:6px; font-weight:800; font-size:11px; cursor:pointer;">
+            ${isSel ? 'ACTIVE ON MAP' : 'SELECT THIS ROUTE'}
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    if (feedContainer) {
+      feedContainer.innerHTML = devices.map((d, i) => `
+        <div style="background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); border-radius:8px; overflow:hidden;">
+          <video autoplay muted loop playsinline style="width:100%; height:75px; object-fit:cover; display:block;" src="${encodeURI(d.video)}"></video>
+          <div style="padding:4px 6px; font-size:10px; font-family:monospace; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</div>
+        </div>
+      `).join('');
+    }
+  }
+
 
   // Live Autocomplete Suggestions Logic
   const POPULAR_LOCATIONS = [
@@ -1529,5 +1593,25 @@
   makeDropdown(document.getElementById('originInput'));
   makeDropdown(document.getElementById('destInput'));
 </script>
+
+<!-- Multi-Route Comparison Modal (Opened via Sidebar Route Planner Icon or Search) -->
+<div id="routePlannerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(4,7,14,0.85); backdrop-filter:blur(10px); z-index:99999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#0F172A; border:1px solid rgba(56,189,248,0.3); border-radius:16px; width:100%; max-width:850px; max-height:90vh; overflow-y:auto; box-shadow:0 0 40px rgba(0,0,0,0.8); font-family:'Inter',sans-serif; color:#FFF; padding:24px; position:relative;">
+    <button onclick="closeRouteModal()" style="position:absolute; top:18px; right:20px; background:rgba(255,255,255,0.08); border:none; color:#FFF; font-size:18px; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+    <div style="font-size:11px; font-family:monospace; color:#38BDF8; letter-spacing:1px; margin-bottom:4px; font-weight:800;">● MULTI-CORRIDOR AI ROUTE OPTIMIZER</div>
+    <div style="font-size:20px; font-weight:800; margin-bottom:14px;" id="modalRouteTitle">All Available Routes & Live Video Checkpoints</div>
+    
+    <div id="modalRoutesContainer" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px; margin-bottom:20px;"></div>
+
+    <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:16px;">
+      <div style="font-size:13px; font-weight:700; margin-bottom:10px; color:#94A3B8; display:flex; justify-content:space-between;">
+        <span>📹 ACTIVE ROUTE CAMERAS & SATELLITE FEEDS (17 VIDEO NODES)</span>
+        <span style="color:#10B981;">● REAL-TIME MP4 SURVEILLANCE</span>
+      </div>
+      <div id="modalCameraFeeds" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px;"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
