@@ -1054,9 +1054,95 @@
     alert(`📊 Switched Active Dataset Pipeline to: ${datasetId.toUpperCase()}`);
   }
 
+  let searchRoutePolyline = null;
+  let searchMarkersGroup = [];
+
   async function fetchRouteOptimization(){
     const originInput = document.getElementById('originInput');
     const destInput = document.getElementById('destInput');
+
+    const originText = originInput ? originInput.value.trim() : "Silk Board Junction, Bengaluru";
+    const destText = destInput ? destInput.value.trim() : "Indiranagar 100ft Road, Bengaluru";
+
+    // 1. Automatically switch to INTERACTIVE MAP tab
+    switchMonitorTab('map');
+
+    // 2. Location geocoding lookup map for Bengaluru
+    const BENGALURU_LOCS = [
+      { keys: ["silk board", "hosur"], lat: 12.9172, lng: 77.6228, name: "Silk Board Junction" },
+      { keys: ["indiranagar", "100ft"], lat: 12.9710, lng: 77.6410, name: "Indiranagar 100ft Road" },
+      { keys: ["bellandur", "outer ring"], lat: 12.9280, lng: 77.6760, name: "Bellandur ORR" },
+      { keys: ["tin factory", "kr puram"], lat: 13.0030, lng: 77.6700, name: "Tin Factory KR Puram" },
+      { keys: ["hebbal", "bellary"], lat: 13.0350, lng: 77.5970, name: "Hebbal Flyover" },
+      { keys: ["mg road", "trinity"], lat: 12.9750, lng: 77.6080, name: "MG Road Signal" },
+      { keys: ["koramangala", "sony world"], lat: 12.9352, lng: 77.6245, name: "Koramangala 80ft Road" },
+      { keys: ["electronic city", "e-city"], lat: 12.8452, lng: 77.6602, name: "Electronic City Toll" },
+      { keys: ["yeshwanthpur", "tumkur"], lat: 13.0280, lng: 77.5410, name: "Yeshwanthpur Circle" },
+      { keys: ["whitefield", "itpl"], lat: 12.9860, lng: 77.7340, name: "Whitefield ITPL Main" },
+      { keys: ["hsr layout", "27th main"], lat: 12.9116, lng: 77.6389, name: "HSR Layout Sector 1" },
+      { keys: ["agara", "agara lake"], lat: 12.9250, lng: 77.6380, name: "Agara Lake Junction" },
+      { keys: ["marathahalli"], lat: 12.9560, lng: 77.7010, name: "Marathahalli Bridge" },
+      { keys: ["domlur"], lat: 12.9610, lng: 77.6380, name: "Domlur Flyover" }
+    ];
+
+    const findCoord = (str, fallbackLat, fallbackLng) => {
+      const s = str.toLowerCase();
+      for (let loc of BENGALURU_LOCS) {
+        if (loc.keys.some(k => s.includes(k))) return [loc.lat, loc.lng, loc.name];
+      }
+      return [fallbackLat, fallbackLng, str];
+    };
+
+    const [oLat, oLng, oName] = findCoord(originText, 12.9172, 77.6228);
+    const [dLat, dLng, dName] = findCoord(destText, 12.9710, 77.6410);
+
+    // 3. Draw route polyline and waypoint markers on Leaflet map
+    setTimeout(() => {
+      if (!leafletMap) return;
+
+      if (searchRoutePolyline) leafletMap.removeLayer(searchRoutePolyline);
+      searchMarkersGroup.forEach(m => leafletMap.removeLayer(m));
+      searchMarkersGroup = [];
+
+      // Waypoints path
+      const waypoints = [
+        [oLat, oLng],
+        [(oLat + dLat)/2 + 0.005, (oLng + dLng)/2 - 0.008],
+        [dLat, dLng]
+      ];
+
+      searchRoutePolyline = L.polyline(waypoints, {
+        color: '#38BDF8',
+        weight: 6,
+        dashArray: '8, 10',
+        opacity: 0.95
+      }).addTo(leafletMap);
+
+      // Start Origin Pin
+      const originPin = L.marker([oLat, oLng], {
+        icon: L.divIcon({
+          className: 'origin-pin',
+          html: `<div style="background:#38BDF8; color:#0F172A; border:2px solid #FFF; padding:4px 9px; border-radius:12px; font-family:sans-serif; font-size:11px; font-weight:800; box-shadow:0 0 16px rgba(56,189,248,0.8);">🚩 ${oName}</div>`,
+          iconSize: [90, 26],
+          iconAnchor: [45, 13]
+        })
+      }).addTo(leafletMap);
+      searchMarkersGroup.push(originPin);
+
+      // Destination Pin
+      const destPin = L.marker([dLat, dLng], {
+        icon: L.divIcon({
+          className: 'dest-pin',
+          html: `<div style="background:#34D399; color:#0F172A; border:2px solid #FFF; padding:4px 9px; border-radius:12px; font-family:sans-serif; font-size:11px; font-weight:800; box-shadow:0 0 16px rgba(52,211,153,0.8);">🏁 ${dName}</div>`,
+          iconSize: [90, 26],
+          iconAnchor: [45, 13]
+        })
+      }).addTo(leafletMap);
+      searchMarkersGroup.push(destPin);
+
+      // Auto-fit map bounds tightly around searched route
+      leafletMap.fitBounds(searchRoutePolyline.getBounds(), { padding: [60, 60] });
+    }, 150);
 
     try {
       const res = await fetch(`${BACKEND_URL}/api/route/optimize`);
@@ -1064,7 +1150,7 @@
         const data = await res.json();
         const noteEl = document.getElementById('predictNoteText');
         if (noteEl) {
-          noteEl.innerHTML = `AI Reroute active via <b>${data.ai_optimized_route.name}</b>. Commute time reduced by <b>${data.ai_optimized_route.time_saved_min} minutes</b> (${data.ai_optimized_route.fuel_saved_liters}L fuel saved).`;
+          noteEl.innerHTML = `AI Reroute active for <b>${oName} → ${dName}</b> via <b>${data.ai_optimized_route.name}</b>. Commute time reduced by <b>${data.ai_optimized_route.time_saved_min} minutes</b> (${data.ai_optimized_route.fuel_saved_liters}L fuel saved).`;
         }
       }
     } catch(e) {
