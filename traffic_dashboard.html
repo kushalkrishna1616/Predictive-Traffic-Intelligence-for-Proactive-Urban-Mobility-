@@ -796,7 +796,9 @@ let mapInitialized = false;
       setTimeout(() => {
         if (leafletMap) {
           leafletMap.invalidateSize();
-          if (mapCorridorLine) {
+          if (routePolylines && routePolylines.length > 0 && routePolylines[activeRouteIndex]) {
+            leafletMap.fitBounds(routePolylines[activeRouteIndex].getBounds(), { padding: [60, 60] });
+          } else if (mapCorridorLine && leafletMap.hasLayer(mapCorridorLine)) {
             leafletMap.fitBounds(mapCorridorLine.getBounds(), { padding: [50, 50] });
           } else {
             leafletMap.setView([12.9550, 77.6350], 12);
@@ -1243,6 +1245,20 @@ let mapInitialized = false;
     const destText = destInput ? destInput.value.trim() : "Richmond Circle, Bengaluru";
 
     switchMonitorTab('map');
+
+    // Instantly remove initial static demo layers from map
+    if (defaultCityMarkers && defaultCityMarkers.length > 0) {
+      defaultCityMarkers.forEach(m => { if (leafletMap && leafletMap.hasLayer(m)) leafletMap.removeLayer(m); });
+      defaultCityMarkers = [];
+    }
+    if (mapCorridorLine && leafletMap && leafletMap.hasLayer(mapCorridorLine)) {
+      leafletMap.removeLayer(mapCorridorLine);
+      mapCorridorLine = null;
+    }
+    if (mapRerouteLine && leafletMap && leafletMap.hasLayer(mapRerouteLine)) {
+      leafletMap.removeLayer(mapRerouteLine);
+      mapRerouteLine = null;
+    }
 
     const noteEl = document.getElementById('predictNoteText');
     if (noteEl) noteEl.innerHTML = `🔍 AI Computing Multi-Route Paths for <b>${originText} → ${destText}</b>...`;
