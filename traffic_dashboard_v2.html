@@ -851,6 +851,14 @@
       { name: "SENSOR-107 Dairy Circle Junction", road: "Bannerghatta Road", lat: 12.9380, lng: 77.5980, pcu: "35.0 PCU", speed: "20 km/h", status: "MODERATE", type: "Bluetooth Traffic Probe", icon: sensorIcon }
     ];
 
+    const VIDEO_FEEDS = [
+      "/static/videos/traffic1.mp4",
+      "/static/videos/traffic2_night.mp4",
+      "/static/videos/traffic3_thermal.mp4",
+      "/static/videos/traffic4_highway.mp4",
+      "/static/videos/traffic5_rain.mp4"
+    ];
+
     devices.forEach((d, idx) => {
       const m = L.marker([d.lat, d.lng], { icon: d.icon }).addTo(leafletMap);
       const isCritical = d.status.includes("CRITICAL") || d.status.includes("SEVERE") || d.status.includes("HEAVY");
@@ -858,20 +866,13 @@
       const statusColor = isCritical ? "#FB6169" : (isClear ? "#34D399" : "#FFB547");
       const isCam = d.type.includes("CCTV") || d.type.includes("Vision");
 
-      const timeOffset = (idx * 3) % 15;
-      const filters = [
-        "contrast(1.08) brightness(1.02)",
-        "contrast(1.15) hue-rotate(10deg)",
-        "contrast(1.1) saturate(1.2)",
-        "contrast(1.05) brightness(0.95)",
-        "contrast(1.2) hue-rotate(350deg)"
-      ];
-      const videoFilter = filters[idx % filters.length];
+      const selectedVideo = VIDEO_FEEDS[idx % VIDEO_FEEDS.length];
+      const timeOffset = (idx * 2.5) % 15;
 
       const liveMediaHtml = isCam ? `
         <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid #38BDF8; position:relative; background:#000;">
-          <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block; filter:${videoFilter};"
-            src="/static/videos/traffic1.mp4#t=${timeOffset}"
+          <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block;"
+            src="${selectedVideo}#t=${timeOffset}"
             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
           </video>
           <img src="/api/video/frame" style="width:100%; height:120px; object-fit:cover; display:none;" alt="Live AI CCTV Frame" />
@@ -1249,21 +1250,14 @@
       const marker = L.marker([jLat,jLng],{icon:devIcon}).addTo(leafletMap);
       searchMarkersGroup.push(marker);
 
-      // Build CCTV live popup with local video and distinct camera offset
-      const timeOffset = (i * 3) % 15;
-      const filters = [
-        "contrast(1.1) brightness(1.0)",
-        "contrast(1.18) hue-rotate(15deg)",
-        "contrast(1.08) saturate(1.3)",
-        "contrast(1.2) brightness(0.95)",
-        "contrast(1.15) hue-rotate(345deg)"
-      ];
-      const videoFilter = filters[i % filters.length];
+      // Build CCTV live popup with distinct video feed and timestamp
+      const selectedRouteVideo = VIDEO_FEEDS[i % VIDEO_FEEDS.length];
+      const timeOffset = (i * 2.5) % 15;
 
       const liveVideoHtml = isCam ? `
         <div style="margin-top:8px; border-radius:8px; overflow:hidden; border:2px solid ${col}; position:relative; background:#000;">
-          <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block; filter:${videoFilter};"
-            src="/static/videos/traffic1.mp4#t=${timeOffset}"
+          <video autoplay muted loop playsinline style="width:100%; height:120px; object-fit:cover; display:block;"
+            src="${selectedRouteVideo}#t=${timeOffset}"
             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
           </video>
           <img src="/api/video/frame" style="width:100%; height:120px; object-fit:cover; display:none;" alt="Live CCTV AI Frame" />
