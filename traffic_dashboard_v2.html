@@ -677,60 +677,7 @@
     <!-- Bottom Row: Prediction Timeline & Dynamic Alternate Routes -->
     <div class="bottom-grid">
 
-      <div class="glass">
-        <div class="panel-head">
-          <div class="panel-title"><span class="eyebrow"></span>PREDICTED CONGESTION UNTIL ARRIVAL</div>
-          <div class="panel-meta">ETA 18 MIN</div>
-        </div>
-        <div style="padding: 4px 20px 20px;">
-          <svg viewBox="0 0 640 170" style="width:100%; height:170px;">
-            <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#FFB547" stop-opacity="0.35"/>
-                <stop offset="100%" stop-color="#FFB547" stop-opacity="0"/>
-              </linearGradient>
-            </defs>
-            <line x1="0" y1="30" x2="640" y2="30" stroke="rgba(255,255,255,0.06)"/>
-            <line x1="0" y1="70" x2="640" y2="70" stroke="rgba(255,255,255,0.06)"/>
-            <line x1="0" y1="110" x2="640" y2="110" stroke="rgba(255,255,255,0.06)"/>
-            <path d="M0,110 L80,96 L160,80 L240,64 L320,40 L400,20 L480,30 L560,58 L640,72 L640,150 L0,150 Z" fill="url(#areaGrad)"/>
-            <path d="M0,110 L80,96 L160,80 L240,64 L320,40 L400,20 L480,30 L560,58 L640,72" fill="none" stroke="#FFB547" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
-            <circle cx="400" cy="20" r="5" fill="#FB6169" filter="url(#glow)"/>
-            <text x="400" y="10" fill="#FB6169" font-family="JetBrains Mono" font-size="10" text-anchor="middle">Peak 92%</text>
-            <line x1="460" y1="0" x2="460" y2="150" stroke="#4DD6FF" stroke-width="1.5" stroke-dasharray="3 5" opacity="0.7"/>
-            <rect x="415" y="0" width="90" height="20" rx="6" fill="rgba(77,214,255,0.15)" stroke="rgba(77,214,255,0.4)"/>
-            <text x="460" y="14" fill="#4DD6FF" font-family="JetBrains Mono" font-size="10" text-anchor="middle">YOUR ETA · 18m</text>
-          </svg>
-          <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); margin-top:6px; padding:0 2px;">
-            <span>Now</span><span>+5m</span><span>+10m</span><span>+15m</span><span>+20m</span><span>+25m</span>
-          </div>
-        </div>
-        <div class="predict-note" id="predictNoteText">
-          CCTV Analytics: Current video frame indicates <b>moderate traffic density</b> with steady flow (Avg Speed: 24.5 km/h). Reroute available to save 24 mins.
-        </div>
       </div>
-
-      <div class="glass">
-        <div class="panel-head">
-          <div class="panel-title"><span class="eyebrow"></span>DYNAMIC AI ALTERNATE ROUTES</div>
-          <div class="panel-meta" id="altRoutesMeta">COMPUTING OPTIMAL CORRIDORS</div>
-        </div>
-
-        <div id="dynamicAlternateRoutesList" style="display:flex; flex-direction:column; gap:10px;">
-          <!-- Dynamic alternate route cards rendered here -->
-          <div class="route-card best">
-            <div class="ring-wrap">
-              <svg viewBox="0 0 52 52" width="52" height="52"><circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/><circle cx="26" cy="26" r="21" fill="none" stroke="#34D399" stroke-width="5" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="74" transform="rotate(-90 26 26)"/></svg>
-              <div class="ring-val" style="color:#34D399;">32%</div>
-            </div>
-            <div class="route-body">
-              <div class="route-card-top"><span class="route-name">⭐ OPTIMAL ROUTE — Direct Arterial</span><span class="best-tag">AI Recommended</span></div>
-              <div class="route-stats"><span><b>18 min</b> ETA (Saved 12m)</span><span><b>7.8 km</b></span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <div class="footer-note">ROUTEPULSE V2 COMMAND CENTER · CONNECTED TO PYTHON BACKEND AT HTTP://LOCALHOST:8000 · INNOHACK AI/ML-09</div>
   </div>
@@ -1787,23 +1734,76 @@ Time Saved: -${data.estimated_delay_reduction_min} mins`);
   makeDropdown(document.getElementById('destInput'));
 </script>
 
-<!-- Multi-Route Comparison Modal (Opened via Sidebar Route Planner Icon or Search) -->
-<div id="routePlannerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(4,7,14,0.85); backdrop-filter:blur(10px); z-index:99999; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#0F172A; border:1px solid rgba(56,189,248,0.3); border-radius:16px; width:100%; max-width:850px; max-height:90vh; overflow-y:auto; box-shadow:0 0 40px rgba(0,0,0,0.8); font-family:'Inter',sans-serif; color:#FFF; padding:24px; position:relative;">
-    <button onclick="closeRouteModal()" style="position:absolute; top:18px; right:20px; background:rgba(255,255,255,0.08); border:none; color:#FFF; font-size:18px; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
-    <div style="font-size:11px; font-family:monospace; color:#38BDF8; letter-spacing:1px; margin-bottom:4px; font-weight:800;">● MULTI-CORRIDOR AI ROUTE OPTIMIZER</div>
-    <div style="font-size:20px; font-weight:800; margin-bottom:14px;" id="modalRouteTitle">All Available Routes & Live Video Checkpoints</div>
+<!-- Multi-Corridor AI Route Intelligence & Alternate Corridors Studio Modal (Opened via Sidebar Route Planner Icon) -->
+<div id="routePlannerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(4,7,14,0.88); backdrop-filter:blur(14px); z-index:99999; align-items:center; justify-content:center; padding:24px;">
+  <div style="background:#0F172A; border:1px solid rgba(56,189,248,0.35); border-radius:18px; width:100%; max-width:1100px; max-height:92vh; overflow-y:auto; box-shadow:0 0 50px rgba(0,0,0,0.9); font-family:'Inter',sans-serif; color:#FFF; padding:26px; position:relative;">
     
-    <div id="modalRoutesContainer" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px; margin-bottom:20px;"></div>
+    <button onclick="closeRouteModal()" style="position:absolute; top:20px; right:22px; background:rgba(255,255,255,0.08); border:none; color:#FFF; font-size:18px; width:34px; height:34px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s;">✕</button>
+    
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+      <span style="font-size:11px; font-family:monospace; color:#38BDF8; font-weight:800; letter-spacing:1px;">● MULTI-CORRIDOR AI ROUTE PLANNER</span>
+      <span style="font-size:10px; background:rgba(56,189,248,0.15); color:#38BDF8; padding:2px 8px; border-radius:12px; font-weight:700;">PROACTIVE REROUTING STUDIO</span>
+    </div>
+    <div style="font-size:22px; font-weight:800; margin-bottom:18px;" id="modalRouteTitle">All Available Alternate Routes & Predicted Congestion</div>
 
-    <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:16px;">
-      <div style="font-size:13px; font-weight:700; margin-bottom:10px; color:#94A3B8; display:flex; justify-content:space-between;">
-        <span>📹 ACTIVE ROUTE CAMERAS & SATELLITE FEEDS (17 VIDEO NODES)</span>
-        <span style="color:#10B981;">● REAL-TIME MP4 SURVEILLANCE</span>
+    <!-- Top 2-Column Grid: Left = Predicted Congestion Area Curve & Switcher; Right = Dynamic AI Alternate Routes -->
+    <div style="display:grid; grid-template-columns: 1.1fr 1fr; gap:18px; margin-bottom:20px;">
+      
+      <!-- Component 1: PREDICTED CONGESTION UNTIL ARRIVAL -->
+      <div style="background:rgba(18,23,36,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-size:13px; font-weight:800; color:#F2F4FA; letter-spacing:0.5px;">PREDICTED CONGESTION UNTIL ARRIVAL</div>
+          <div style="font-size:11px; font-family:monospace; color:#38BDF8; font-weight:700;">ETA PROFILE</div>
+        </div>
+        <svg viewBox="0 0 640 170" style="width:100%; height:150px;">
+          <defs>
+            <linearGradient id="modalAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFB547" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#FFB547" stop-opacity="0"/>
+            </linearGradient>
+            <filter id="modalGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <line x1="0" y1="30" x2="640" y2="30" stroke="rgba(255,255,255,0.06)"/>
+          <line x1="0" y1="70" x2="640" y2="70" stroke="rgba(255,255,255,0.06)"/>
+          <line x1="0" y1="110" x2="640" y2="110" stroke="rgba(255,255,255,0.06)"/>
+          <path d="M0,110 L80,96 L160,80 L240,64 L320,40 L400,20 L480,30 L560,58 L640,72 L640,150 L0,150 Z" fill="url(#modalAreaGrad)"/>
+          <path d="M0,110 L80,96 L160,80 L240,64 L320,40 L400,20 L480,30 L560,58 L640,72" fill="none" stroke="#FFB547" stroke-width="2.5" stroke-linecap="round" filter="url(#modalGlow)"/>
+          <circle cx="400" cy="20" r="5" fill="#FB6169" filter="url(#modalGlow)"/>
+          <text x="400" y="10" fill="#FB6169" font-family="monospace" font-size="10" text-anchor="middle">Peak 92%</text>
+          <line x1="460" y1="0" x2="460" y2="150" stroke="#4DD6FF" stroke-width="1.5" stroke-dasharray="3 5" opacity="0.7"/>
+          <rect x="415" y="0" width="90" height="20" rx="6" fill="rgba(77,214,255,0.15)" stroke="rgba(77,214,255,0.4)"/>
+          <text x="460" y="14" fill="#4DD6FF" font-family="monospace" font-size="10" text-anchor="middle">YOUR ETA · 18m</text>
+        </svg>
+        <div style="display:flex; justify-content:space-between; font-family:monospace; font-size:10px; color:#64748B; margin-top:4px; padding:0 2px;">
+          <span>Now</span><span>+5m</span><span>+10m</span><span>+15m</span><span>+20m</span><span>+25m</span>
+        </div>
+        <div id="predictNoteText" style="margin-top:12px; font-size:12px; color:#94A3B8; background:rgba(255,255,255,0.03); padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+          🔍 Select an origin and destination to compute all available alternative corridors.
+        </div>
       </div>
-      <div id="modalCameraFeeds" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px;"></div>
+
+      <!-- Component 2: DYNAMIC AI ALTERNATE ROUTES -->
+      <div style="background:rgba(18,23,36,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-size:13px; font-weight:800; color:#F2F4FA; letter-spacing:0.5px;">DYNAMIC AI ALTERNATE ROUTES</div>
+          <div style="font-size:11px; font-family:monospace; color:#34D399; font-weight:700;" id="altRoutesMeta">CORRIDOR ANALYSIS</div>
+        </div>
+        <div id="dynamicAlternateRoutesList" style="display:flex; flex-direction:column; gap:10px; max-height:280px; overflow-y:auto;">
+          <!-- Dynamic alternate route cards rendered here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Route Video Surveillance Gallery -->
+    <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:18px;">
+      <div style="font-size:13px; font-weight:700; margin-bottom:12px; color:#94A3B8; display:flex; justify-content:space-between; align-items:center;">
+        <span>📹 ACTIVE ROUTE CAMERAS & SATELLITE FEEDS (17 VIDEO NODES)</span>
+        <span style="color:#10B981; font-family:monospace; font-size:11px;">● LIVE MP4 SURVEILLANCE ACTIVE</span>
+      </div>
+      <div id="modalCameraFeeds" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:12px; max-height:240px; overflow-y:auto;"></div>
     </div>
   </div>
+</div>
 </div>
 
 </body>
