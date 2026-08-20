@@ -285,19 +285,39 @@
 
   .footer-note{ text-align:center; color:var(--text-faint); font-size:11px; margin-top:6px; font-family:var(--font-mono); letter-spacing:0.3px; }
 
-  /* Autocomplete Dropdown */
+  /* Autocomplete Dropdown — fixed position to escape overflow:hidden parents */
   .autocomplete-dropdown {
-    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
-    background: #0D111C; border: 1px solid var(--border-hi); border-radius: 12px;
-    box-shadow: 0 12px 36px rgba(0,0,0,0.7); z-index: 99999; display: none;
-    max-height: 220px; overflow-y: auto; backdrop-filter: blur(16px);
+    position: fixed;
+    background: #0D111C;
+    border: 1px solid rgba(56,189,248,0.4);
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.85);
+    z-index: 999999;
+    display: none;
+    max-height: 240px;
+    overflow-y: auto;
+    backdrop-filter: blur(20px);
+    min-width: 260px;
   }
   .autocomplete-item {
-    padding: 10px 14px; font-size: 12.5px; font-family: var(--font-body);
-    color: var(--text); cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04);
-    display: flex; align-items: center; gap: 8px; transition: background 0.15s;
+    padding: 11px 16px;
+    font-size: 13px;
+    font-family: var(--font-body);
+    color: var(--text);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.12s, color 0.12s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .autocomplete-item:hover { background: rgba(56,189,248,0.15); color: var(--cyan); }
+  .autocomplete-item:hover, .autocomplete-item.active {
+    background: rgba(56,189,248,0.18);
+    color: #38BDF8;
+  }
   .autocomplete-item:last-child { border-bottom: none; }
 </style>
 </head>
@@ -1216,6 +1236,13 @@
 
     let debounceTimer = null;
 
+    function positionDropdown() {
+      const rect = input.getBoundingClientRect();
+      dropdown.style.top = (rect.bottom + 6) + 'px';
+      dropdown.style.left = rect.left + 'px';
+      dropdown.style.width = rect.width + 'px';
+    }
+
     input.addEventListener('input', function() {
       const q = input.value.trim().toLowerCase();
       clearTimeout(debounceTimer);
@@ -1226,13 +1253,12 @@
         return;
       }
 
-      // 1. Instant local matching
+      // Instant local matching
       const localMatches = POPULAR_LOCATIONS.filter(loc => loc.toLowerCase().includes(q));
-
-      // Display local matches immediately
+      positionDropdown();
       renderDropdownItems(localMatches, input, dropdown);
 
-      // 2. Fetch live OpenStreetMap Nominatim suggestions for deeper matching
+      // Then hit Nominatim for world-wide results
       debounceTimer = setTimeout(async () => {
         try {
           const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`;
@@ -1242,14 +1268,17 @@
             if (data && data.length > 0) {
               const apiNames = data.map(item => item.display_name);
               const combined = Array.from(new Set([...localMatches, ...apiNames])).slice(0, 7);
+              positionDropdown();
               renderDropdownItems(combined, input, dropdown);
             }
           }
-        } catch(e) {
-          console.log("Autocomplete API error:", e);
-        }
-      }, 250);
+        } catch(e) { /* silent */ }
+      }, 280);
     });
+
+    // Reposition on scroll/resize
+    window.addEventListener('scroll', () => { if (dropdown.style.display === 'block') positionDropdown(); }, true);
+    window.addEventListener('resize', () => { if (dropdown.style.display === 'block') positionDropdown(); });
 
     document.addEventListener('click', function(e) {
       if (!input.contains(e.target) && !dropdown.contains(e.target)) {
@@ -1264,11 +1293,10 @@
       dropdown.innerHTML = '';
       return;
     }
-    dropdown.innerHTML = items.map(item => `
-      <div class="autocomplete-item" onclick="selectAutocomplete('${input.id}', '${dropdown.id}', '${item.replace(/'/g, "\\'")}')">
-        📍 ${item}
-      </div>
-    `).join('');
+    dropdown.innerHTML = items.map(item => {
+      const safe = item.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return `<div class="autocomplete-item" onmousedown="selectAutocomplete('${input.id}', '${dropdown.id}', '${safe}')">📍 ${item}</div>`;
+    }).join('');
     dropdown.style.display = 'block';
   }
 
@@ -1276,15 +1304,14 @@
     const input = document.getElementById(inputId);
     const dropdown = document.getElementById(dropdownId);
     if (input) input.value = text;
-    if (dropdown) {
-      dropdown.style.display = 'none';
-      dropdown.innerHTML = '';
-    }
+    if (dropdown) { dropdown.style.display = 'none'; dropdown.innerHTML = ''; }
     fetchRouteOptimization();
   }
 
-  setupAutocomplete('originInput', 'originDropdown');
-  setupAutocomplete('destInput', 'destDropdown');
+  document.addEventListener('DOMContentLoaded', function() {
+    setupAutocomplete('originInput', 'originDropdown');
+    setupAutocomplete('destInput', 'destDropdown');
+  });
 </script>
 </body>
 </html>
