@@ -1137,70 +1137,108 @@
     const originText = originInput ? originInput.value.trim() : "Silk Board Junction, Bengaluru";
     const destText = destInput ? destInput.value.trim() : "Indiranagar 100ft Road, Bengaluru";
 
-    // 1. Switch to INTERACTIVE MAP view immediately
     switchMonitorTab('map');
 
     const noteEl = document.getElementById('predictNoteText');
-    if (noteEl) {
-      noteEl.innerHTML = `🔍 Geocoding OpenStreetMap real-world coordinates for <b>${originText} → ${destText}</b>...`;
-    }
+    if (noteEl) noteEl.innerHTML = `🔍 Geocoding <b>${originText} → ${destText}</b>...`;
 
-    // 2. Perform real OpenStreetMap Nominatim Geocoding
     const [oLat, oLng, oName] = await geocodeLocation(originText, 12.9172, 77.6228, originText);
     const [dLat, dLng, dName] = await geocodeLocation(destText, 12.9710, 77.6410, destText);
-
-    // 3. Fetch real OSRM turn-by-turn driving road network geometry
     const osrmResult = await fetchOSRMRoute(oLat, oLng, dLat, dLng);
 
     const waypoints = osrmResult ? osrmResult.coords : [
-      [oLat, oLng],
-      [(oLat + dLat)/2 + 0.005, (oLng + dLng)/2 - 0.008],
-      [dLat, dLng]
+      [oLat, oLng], [(oLat+dLat)/2, (oLng+dLng)/2], [dLat, dLng]
     ];
-
     const distKm = osrmResult ? osrmResult.distKm : "11.2";
     const durationMin = osrmResult ? osrmResult.durationMin : "34";
 
-    // 4. Render on Leaflet OpenStreetMap
-    if (leafletMap) {
-      if (searchRoutePolyline) leafletMap.removeLayer(searchRoutePolyline);
-      searchMarkersGroup.forEach(m => leafletMap.removeLayer(m));
-      searchMarkersGroup = [];
+    if (!leafletMap) return;
 
-      searchRoutePolyline = L.polyline(waypoints, {
-        color: '#0284C7',
-        weight: 6,
-        opacity: 0.9
-      }).addTo(leafletMap);
+    // Clear previous search layers
+    if (searchRoutePolyline) leafletMap.removeLayer(searchRoutePolyline);
+    searchMarkersGroup.forEach(m => leafletMap.removeLayer(m));
+    searchMarkersGroup = [];
 
-      // Origin Flag Marker
-      const originPin = L.marker([oLat, oLng], {
-        icon: L.divIcon({
-          className: 'origin-pin',
-          html: `<div style="background:#0284C7; color:#FFF; border:2px solid #FFF; padding:4px 10px; border-radius:12px; font-family:sans-serif; font-size:11.5px; font-weight:800; white-space:nowrap; box-shadow:0 0 16px rgba(2,132,199,0.8);">🚩 ${oName}</div>`,
-          iconSize: [110, 28],
-          iconAnchor: [55, 14]
-        })
-      }).addTo(leafletMap);
-      searchMarkersGroup.push(originPin);
+    // Draw route polyline
+    searchRoutePolyline = L.polyline(waypoints, { color:'#0284C7', weight:6, opacity:0.9 }).addTo(leafletMap);
 
-      // Destination Flag Marker
-      const destPin = L.marker([dLat, dLng], {
-        icon: L.divIcon({
-          className: 'dest-pin',
-          html: `<div style="background:#16A34A; color:#FFF; border:2px solid #FFF; padding:4px 10px; border-radius:12px; font-family:sans-serif; font-size:11.5px; font-weight:800; white-space:nowrap; box-shadow:0 0 16px rgba(22,163,74,0.8);">🏁 ${dName}</div>`,
-          iconSize: [110, 28],
-          iconAnchor: [55, 14]
-        })
-      }).addTo(leafletMap);
-      searchMarkersGroup.push(destPin);
+    // Origin & Destination pins
+    const mkPin = (lat,lng,html,sz) => L.marker([lat,lng],{icon:L.divIcon({className:'',html,iconSize:sz,iconAnchor:[sz[0]/2,sz[1]/2]})});
+    const oPin = mkPin(oLat,oLng,`<div style="background:#0284C7;color:#FFF;border:2px solid #FFF;padding:4px 10px;border-radius:12px;font-family:sans-serif;font-size:11.5px;font-weight:800;white-space:nowrap;box-shadow:0 0 16px rgba(2,132,199,0.8)">🚩 ${oName}</div>`,[110,28]);
+    const dPin = mkPin(dLat,dLng,`<div style="background:#16A34A;color:#FFF;border:2px solid #FFF;padding:4px 10px;border-radius:12px;font-family:sans-serif;font-size:11.5px;font-weight:800;white-space:nowrap;box-shadow:0 0 16px rgba(22,163,74,0.8)">🏁 ${dName}</div>`,[110,28]);
+    oPin.addTo(leafletMap); dPin.addTo(leafletMap);
+    searchMarkersGroup.push(oPin, dPin);
 
-      // Auto-fit Leaflet viewport to searched route
-      leafletMap.fitBounds(searchRoutePolyline.getBounds(), { padding: [60, 60] });
+    // ── DYNAMIC CAMERA & SENSOR PLACEMENT ALONG ROUTE ──
+    // Pick evenly-spaced waypoints from the route geometry
+    const numDevices = Math.min(10, Math.max(4, Math.floor(waypoints.length / 8)));
+    const step = Math.floor(waypoints.length / (numDevices + 1));
+
+    const statusPool = ["CLEAR","FLOWING","MODERATE","HEAVY","CONGESTED","CRITICAL","OPTIMAL","SEVERE CONGESTION"];
+    const typePoolCam = ["CCTV Vision AI","4K Thermal Camera","PTZ Speed Camera","AI Lane Counter"];
+    const typePoolSen = ["Dual Radar Loop","IoT Acoustic Radar","Infrared Counter","Bluetooth Probe","Radar Speed Sensor"];
+
+    for (let i = 1; i <= numDevices; i++) {
+      const idx = Math.min(i * step, waypoints.length - 1);
+      const [wLat, wLng] = waypoints[idx];
+      // Slight random offset so markers don't sit exactly on road line
+      const jLat = wLat + (Math.random() - 0.5) * 0.004;
+      const jLng = wLng + (Math.random() - 0.5) * 0.004;
+
+      const isCam = i % 2 === 1;
+      const pcu = (Math.random() * 50 + 10).toFixed(1);
+      const speed = Math.floor(Math.random() * 55 + 10);
+      const status = statusPool[Math.floor(Math.random() * statusPool.length)];
+      const devType = isCam ? typePoolCam[i % typePoolCam.length] : typePoolSen[i % typePoolSen.length];
+      const devId = isCam ? `CAM-${9000+i}` : `SEN-${2000+i}`;
+      const label = isCam ? "📹 CCTV AI" : "📡 SENSOR";
+      const col = isCam ? "#38BDF8" : "#34D399";
+      const glow = isCam ? "rgba(56,189,248,0.8)" : "rgba(52,211,153,0.8)";
+      const isCrit = status.includes("CRIT")||status.includes("SEVERE")||status.includes("HEAVY");
+      const isFree = status.includes("CLEAR")||status.includes("FAST")||status.includes("OPT")||status.includes("FLOW");
+      const sc = isCrit?"#FB6169":isFree?"#34D399":"#FFB547";
+
+      const devIcon = L.divIcon({
+        className:'',
+        html:`<div style="background:#0F172A;color:${col};border:2px solid ${glow};padding:3px 7px;border-radius:10px;font-family:monospace;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 0 10px ${glow};cursor:pointer;">${label}</div>`,
+        iconSize:[72,24], iconAnchor:[36,12]
+      });
+
+      const marker = L.marker([jLat,jLng],{icon:devIcon}).addTo(leafletMap);
+      searchMarkersGroup.push(marker);
+
+      // Build CCTV live popup
+      const liveVideoHtml = isCam ? `
+        <div style="margin-top:8px;border-radius:8px;overflow:hidden;border:2px solid ${col};position:relative;background:#000;">
+          <video autoplay muted loop playsinline style="width:100%;height:110px;object-fit:cover;display:block;opacity:0.85;"
+            src="https://www.w3schools.com/html/mov_bbb.mp4"
+            onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+          </video>
+          <div style="display:none;width:100%;height:110px;background:#0D111C;align-items:center;justify-content:center;font-family:monospace;font-size:10px;color:${col};">
+            📡 LIVE FEED — ${devId}
+          </div>
+          <div style="position:absolute;top:4px;left:6px;background:rgba(251,97,105,0.9);color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;font-family:monospace;">● LIVE</div>
+          <div style="position:absolute;bottom:4px;right:6px;background:rgba(0,0,0,0.75);color:#94A3B8;font-size:9px;padding:2px 6px;border-radius:4px;font-family:monospace;">${new Date().toLocaleTimeString('en-IN',{hour12:false})}</div>
+        </div>` : '';
+
+      marker.bindPopup(L.popup({maxWidth:260}).setContent(`
+        <div style="font-family:'Inter',sans-serif;padding:4px 2px;color:#0D111C;min-width:220px;">
+          <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.5px;">${devType}</div>
+          <div style="font-size:13px;font-weight:700;color:#0F172A;margin:3px 0 2px;">${devId} · Route Checkpoint ${i}</div>
+          <div style="font-size:11px;color:#64748B;margin-bottom:6px;">📍 Along ${oName} → ${dName}</div>
+          <div style="background:#F1F5F9;padding:8px 10px;border-radius:6px;font-family:monospace;font-size:11px;display:flex;justify-content:space-between;margin-bottom:5px;">
+            <span>PCU: <b>${pcu}</b></span><span>Speed: <b>${speed} km/h</b></span>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:${sc};margin-bottom:4px;">● ${status}</div>
+          ${liveVideoHtml}
+        </div>
+      `));
     }
 
+    leafletMap.fitBounds(searchRoutePolyline.getBounds(), { padding: [60, 60] });
+
     if (noteEl) {
-      noteEl.innerHTML = `🗺️ <b>OpenStreetMap Real Driving Route Found</b>: <b>${oName} → ${dName}</b> | Total Distance: <b>${distKm} km</b> | Drive Time: <b>${durationMin} mins</b>.`;
+      noteEl.innerHTML = `🗺️ <b>Route Found</b>: <b>${oName} → ${dName}</b> | <b>${distKm} km</b> · <b>${durationMin} mins</b> | ${numDevices} CCTV/Sensor checkpoints placed along route.`;
     }
   }
 
