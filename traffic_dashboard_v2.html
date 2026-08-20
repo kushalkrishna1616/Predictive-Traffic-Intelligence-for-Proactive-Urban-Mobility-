@@ -394,16 +394,16 @@
       <div class="sim-grid">
         <div class="sim-field">
           <label>Traffic Volume Spike: <b id="lblVolVal">+0%</b></label>
-          <input type="range" class="sim-slider" id="simVolumeSlider" min="1.0" max="2.0" step="0.05" value="1.0" oninput="document.getElementById('lblVolVal').textContent = '+' + Math.round((this.value-1)*100) + '%'">
+          <input type="range" class="sim-slider" id="simVolumeSlider" min="1.0" max="2.0" step="0.05" value="1.0" oninput="document.getElementById('lblVolVal').textContent = '+' + Math.round((this.value-1)*100) + '%'; applyTrafficSimulation();">
         </div>
         <label class="sim-toggle">
-          <input type="checkbox" id="simRainCheck"> 🌧️ Rain Impact
+          <input type="checkbox" id="simRainCheck" onchange="applyTrafficSimulation()"> 🌧️ Rain Impact
         </label>
         <label class="sim-toggle">
-          <input type="checkbox" id="simAccidentCheck"> <span id="lblAccidentText">🚨 Silk Board Accident</span>
+          <input type="checkbox" id="simAccidentCheck" onchange="applyTrafficSimulation()"> <span id="lblAccidentText">🚨 Silk Board Accident</span>
         </label>
         <label class="sim-toggle">
-          <input type="checkbox" id="simClosureCheck"> 🚧 Lane Closure
+          <input type="checkbox" id="simClosureCheck" onchange="applyTrafficSimulation()"> 🚧 Lane Closure
         </label>
         <button class="btn-sim-apply" onclick="applyTrafficSimulation()">APPLY SIMULATION</button>
       </div>
@@ -883,46 +883,43 @@
   // Poll safely every 1.2s ONLY when tab is active
   setInterval(pollDashboardLoop, 1200);
 
+  let hasCustomRouteOrSimulation = false;
+
   function updateDashboardFromVideoData(data){
     if(!data) return;
 
-    const counts = data.counts || {};
-    const bikesCount = (counts.bike || 0) + (counts.auto || 0);
-    const carsCount = counts.car || 0;
-    const busesCount = counts.bus || 0;
-    const trucksCount = counts.truck || 0;
-
-    const countBikesEl = document.getElementById('countBikes');
-    const countCarsEl = document.getElementById('countCars');
-    const countBusesEl = document.getElementById('countBuses');
-    const countTrucksEl = document.getElementById('countTrucks');
-
-    if (countBikesEl) countBikesEl.textContent = `${bikesCount} units · 0.5/0.8 PCU`;
-    if (countCarsEl) countCarsEl.textContent = `${carsCount} units · 1.0 PCU ea`;
-    if (countBusesEl) countBusesEl.textContent = `${busesCount} units · 3.0 PCU ea`;
-    if (countTrucksEl) countTrucksEl.textContent = `${trucksCount} units · 2.5 PCU`;
-
-    const totalVehicles = Math.max(1, (bikesCount + carsCount + busesCount + trucksCount));
-    document.getElementById('barBikes').style.width = `${Math.min(100, Math.round((bikesCount / totalVehicles) * 100))}%`;
-    document.getElementById('barCars').style.width = `${Math.min(100, Math.round((carsCount / totalVehicles) * 100))}%`;
-    document.getElementById('barBuses').style.width = `${Math.min(100, Math.round((busesCount / totalVehicles) * 100))}%`;
-    document.getElementById('barTrucks').style.width = `${Math.min(100, Math.round((trucksCount / totalVehicles) * 100))}%`;
-
-    const pcuVal = data.total_pcu || 15.0;
-    const pcuEl = document.getElementById('pcuTotalVal');
-    if (pcuEl) pcuEl.textContent = `${pcuVal} PCU`;
-
-    const kpiPcu = document.getElementById('kpiPcuValue');
-    if (kpiPcu) kpiPcu.textContent = `${data.congestion_pct}%`;
-
-    const camBadgePcu = document.getElementById('camBadgePcu');
-    if (camBadgePcu) camBadgePcu.textContent = `${data.congestion_pct}% PCU`;
-
-    updateGauge(data.congestion_pct || 50.0);
-
     const hudEl = document.getElementById('videoHudText');
     if (hudEl) {
-      hudEl.textContent = `● REC [CAM-3049 SILK BOARD] | FRAME #${data.frame_index} | VEHICLES: ${data.total_vehicles} | SPEED: ${data.avg_speed_kmh} KM/H`;
+      hudEl.textContent = `● REC [LIVE AI DETECTOR] | FRAME #${data.frame_index || 104} | SPEED: ${data.avg_speed_kmh || 32} KM/H`;
+    }
+
+    // Only set default fallback vehicle breakdown if no route or simulation has been applied yet
+    if (!hasCustomRouteOrSimulation) {
+      const counts = data.counts || {};
+      const bikesCount = (counts.bike || 0) + (counts.auto || 0) || 11;
+      const carsCount = counts.car || 4;
+      const busesCount = counts.bus || 2;
+      const trucksCount = counts.truck || 1;
+
+      const countBikesEl = document.getElementById('countBikes');
+      const countCarsEl = document.getElementById('countCars');
+      const countBusesEl = document.getElementById('countBuses');
+      const countTrucksEl = document.getElementById('countTrucks');
+
+      if (countBikesEl) countBikesEl.textContent = `${bikesCount} units · 0.5/0.8 PCU`;
+      if (countCarsEl) countCarsEl.textContent = `${carsCount} units · 1.0 PCU ea`;
+      if (countBusesEl) countBusesEl.textContent = `${busesCount} units · 3.0 PCU ea`;
+      if (countTrucksEl) countTrucksEl.textContent = `${trucksCount} units · 2.5 PCU`;
+
+      const totalVehicles = Math.max(1, (bikesCount + carsCount + busesCount + trucksCount));
+      if (document.getElementById('barBikes')) document.getElementById('barBikes').style.width = `${Math.min(100, Math.round((bikesCount / totalVehicles) * 100))}%`;
+      if (document.getElementById('barCars')) document.getElementById('barCars').style.width = `${Math.min(100, Math.round((carsCount / totalVehicles) * 100))}%`;
+      if (document.getElementById('barBuses')) document.getElementById('barBuses').style.width = `${Math.min(100, Math.round((busesCount / totalVehicles) * 100))}%`;
+      if (document.getElementById('barTrucks')) document.getElementById('barTrucks').style.width = `${Math.min(100, Math.round((trucksCount / totalVehicles) * 100))}%`;
+
+      const pcuVal = data.total_pcu || 19.5;
+      const pcuEl = document.getElementById('pcuTotalVal');
+      if (pcuEl) pcuEl.textContent = `${pcuVal} PCU`;
     }
   }
 
@@ -961,6 +958,7 @@
   }
 
     function updateDashboardForRoute(routeObj, originName, destName, simState) {
+    hasCustomRouteOrSimulation = true;
     if (!routeObj) return;
 
     const volMult = simState ? (simState.volume_multiplier || 1.0) : (parseFloat(document.getElementById('simVolumeSlider')?.value) || 1.0);
@@ -987,7 +985,7 @@
 
     const totalVehicles = Math.max(1, (baseBikes + baseCars + baseBuses + baseTrucks));
     if (document.getElementById('barBikes')) document.getElementById('barBikes').style.width = `${Math.min(100, Math.round((baseBikes / totalVehicles) * 100))}%`;
-    if (document.getElementById('barCars')) document.getElementById('barCars').style.width = `${Math.min(100, Math.round((baseCars / totalVehicles) * 100))}%`;
+    if (document.getElementById('barCars')) document.getElementById('barCars').style.width = `${Math.min(100, Math.round((carsCount / totalVehicles) * 100))}%`;
     if (document.getElementById('barBuses')) document.getElementById('barBuses').style.width = `${Math.min(100, Math.round((baseBuses / totalVehicles) * 100))}%`;
     if (document.getElementById('barTrucks')) document.getElementById('barTrucks').style.width = `${Math.min(100, Math.round((baseTrucks / totalVehicles) * 100))}%`;
 
