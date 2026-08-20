@@ -26,6 +26,8 @@ video_proc = cctv_video_processor.CCTVVideoProcessor()
 HTML_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "traffic_dashboard.html")
 
 class TrafficAPIHandler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def _send_cors_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
@@ -36,24 +38,59 @@ class TrafficAPIHandler(BaseHTTPRequestHandler):
         self._send_cors_headers()
         self.end_headers()
 
+    def do_HEAD(self):
+        self.do_GET()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
         query = parse_qs(parsed.query)
 
-        # Serve HTML Dashboard UI at root /
-        if path == "/" or path == "/index.html" or path == "/dashboard":
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/html; charset=utf-8')
-            self._send_cors_headers()
-            self.end_headers()
+        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        # Serve HTML Dashboard UI at root or specific html paths
+        if path in ["/", "/index.html", "/dashboard", "/traffic_dashboard.html", "/traffic_dashboard_v2.html", "/v2", "/v2.html"]:
+            target_name = "traffic_dashboard_v2.html" if path in ["/v2", "/v2.html", "/traffic_dashboard_v2.html"] else "traffic_dashboard.html"
+            target_path = os.path.join(PROJECT_ROOT, target_name)
+
             try:
-                with open(HTML_FILE_PATH, 'r', encoding='utf-8') as f:
-                    html_content = f.read()
-                self.wfile.write(html_content.encode('utf-8'))
+                with open(target_path, 'rb') as f:
+                    body_bytes = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(body_bytes)))
+                self._send_cors_headers()
+                self.end_headers()
+                self.wfile.write(body_bytes)
             except Exception as e:
-                self.wfile.write(f"<h1>Error loading dashboard HTML: {e}</h1>".encode('utf-8'))
+                self.send_error(500, f"Error loading dashboard: {e}")
             return
+
+        # Serve static HTML, CSS, JS files
+        if path.endswith((".html", ".css", ".js")):
+            clean_path = path.lstrip("/")
+            file_path = os.path.join(PROJECT_ROOT, clean_path)
+            if not os.path.exists(file_path):
+                file_path = os.path.join(PROJECT_ROOT, "web_dashboard", clean_path)
+
+            if os.path.exists(file_path) and os.path.isfile(file_path):
+                try:
+                    with open(file_path, 'rb') as f:
+                        body_bytes = f.read()
+                    self.send_response(200)
+                    if path.endswith(".html"):
+                        self.send_header('Content-Type', 'text/html; charset=utf-8')
+                    elif path.endswith(".css"):
+                        self.send_header('Content-Type', 'text/css; charset=utf-8')
+                    elif path.endswith(".js"):
+                        self.send_header('Content-Type', 'application/javascript; charset=utf-8')
+                    self.send_header('Content-Length', str(len(body_bytes)))
+                    self._send_cors_headers()
+                    self.end_headers()
+                    self.wfile.write(body_bytes)
+                except Exception as e:
+                    self.send_error(500, f"Error serving static file: {e}")
+                return
 
         # Serve Live Video Stream (MJPEG format)
         if path == "/api/video/feed":
